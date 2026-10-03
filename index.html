@@ -208,23 +208,87 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   .cake__candles.is-blowing .candle{transform:none}
   html[data-candles="out"] .smoke{animation:none}
   .has-js .wall .shot,.has-js .wall.is-open .shot{opacity:1;animation:none}
+  .deco--float,.idv__card{animation:none}
 }
-  /* ===== 角色应援带（12 号票：第五人格元素）===== */
-.band--idv{display:block;overflow:visible}
-.idv{display:flex;align-items:flex-end;gap:clamp(10px,3vw,16px);
-  padding:clamp(12px,4vw,20px) var(--pad) clamp(20px,6vw,30px);
+  /* ===== 画面装饰层（13 号票：第五人格只做装饰，人像已抠图）=====
+     背景光斑+细网格铺底，人像以剪影/贴纸/探头的形式分散在各段边缘；
+     全部 pointer-events:none，不抢点击、不参与状态机。 */
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(62% 40% at 8% 6%,rgba(255,46,136,.16),rgba(255,46,136,0) 70%),
+    radial-gradient(58% 38% at 94% 22%,rgba(46,230,255,.14),rgba(46,230,255,0) 68%),
+    radial-gradient(82% 44% at 46% 106%,rgba(204,255,51,.13),rgba(204,255,51,0) 72%)}
+body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(246,246,247,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(246,246,247,.05) 1px,transparent 1px);
+  background-size:26px 26px;
+  -webkit-mask-image:radial-gradient(130% 78% at 50% 24%,#000 16%,transparent 76%);
+  mask-image:radial-gradient(130% 78% at 50% 24%,#000 16%,transparent 76%)}
+.sec,.band{position:relative}
+.deco{position:absolute;z-index:-1;pointer-events:none;-webkit-user-select:none;user-select:none}
+.deco img{display:block;width:100%;height:auto;
+  filter:drop-shadow(0 16px 26px rgba(0,0,0,.6))}
+.deco--ghost img{opacity:.13;filter:drop-shadow(0 22px 42px rgba(0,0,0,.5))}
+.deco--tilt{transform:rotate(var(--tilt,0deg))}
+.deco--float{animation:drift 8s ease-in-out infinite}
+.blob{position:absolute;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(40px)}
+.spark{position:absolute;z-index:-1;pointer-events:none;font-weight:900;line-height:1;
+  color:var(--acid);text-shadow:0 0 14px rgba(204,255,51,.55)}
+
+  /* ===== 角色群像带（12 号票改版：抠图人像只当装饰，不再是卡片墙）===== */
+.band--idv{display:block;overflow:visible;
+  background:radial-gradient(74% 62% at 50% 98%,rgba(204,255,51,.10),rgba(204,255,51,0) 72%)}
+.band--idv::after{content:"";position:absolute;left:7%;right:7%;bottom:clamp(16px,4.5vw,26px);height:1px;
+  background:linear-gradient(90deg,transparent,rgba(204,255,51,.6),rgba(46,230,255,.5),transparent);
+  box-shadow:0 0 18px rgba(204,255,51,.35)}
+.idv__watermark{position:absolute;left:50%;top:46%;z-index:0;margin:0;
+  transform:translate(-50%,-50%) rotate(-4deg);
+  font-size:clamp(50px,16vw,100px);font-weight:900;letter-spacing:.02em;text-transform:uppercase;
+  white-space:nowrap;color:transparent;-webkit-text-stroke:1px rgba(246,246,247,.15)}
+.idv{position:relative;z-index:1;display:flex;align-items:flex-end;gap:clamp(1px,1.2vw,8px);
+  padding:clamp(12px,3.4vw,20px) var(--pad) clamp(28px,7vw,40px);
   overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
   -webkit-overflow-scrolling:touch;scrollbar-width:none}
 .idv::-webkit-scrollbar{display:none}
-.idv__label{margin:0 0 clamp(12px,4vw,18px);padding:0 var(--pad)}
-.idv__card{margin:0;flex:0 0 auto;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
-.idv__card img{display:block;width:auto;height:clamp(176px,44vh,300px);border-radius:9px;
-  background:#17171d;box-shadow:0 18px 40px rgba(0,0,0,.55)}
-.idv__card:nth-child(2n) img{height:clamp(196px,50vh,336px)}
-.idv__card:nth-child(3n) img{height:clamp(160px,40vh,268px)}
-.idv__card:nth-child(3n){--tilt:-1.8deg;--dy:clamp(6px,2vw,12px)}
+.idv__label{position:relative;z-index:1;margin:0 0 clamp(6px,2vw,10px);padding:0 var(--pad)}
+.idv__card{position:relative;margin:0;flex:0 0 auto;
+  transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg));
+  animation:drift 9s ease-in-out infinite}
+.idv__card::before{content:"";position:absolute;left:-12%;right:-12%;bottom:0;height:56%;z-index:-1;
+  border-radius:50%;filter:blur(7px);
+  background:radial-gradient(50% 58% at 50% 64%,rgba(204,255,51,.22),rgba(204,255,51,0) 72%)}
+.idv__card img{display:block;width:auto;height:clamp(146px,36vh,252px);
+  filter:drop-shadow(0 14px 24px rgba(0,0,0,.62))}
+.idv__card:nth-child(2n){--dy:clamp(10px,3vw,18px);animation-duration:11s;animation-delay:-3s}
+.idv__card:nth-child(2n) img{height:clamp(166px,42vh,286px)}
+.idv__card:nth-child(2n)::before{background:radial-gradient(50% 58% at 50% 64%,rgba(255,46,136,.24),rgba(255,46,136,0) 72%)}
+.idv__card:nth-child(3n){--tilt:-1.8deg;--dy:clamp(6px,2vw,12px);animation-duration:13s;animation-delay:-6s}
+.idv__card:nth-child(3n) img{height:clamp(134px,33vh,232px)}
+.idv__card:nth-child(3n)::before{background:radial-gradient(50% 58% at 50% 64%,rgba(46,230,255,.24),rgba(46,230,255,0) 72%)}
 .idv__card:nth-child(3n+1){--tilt:1.4deg}
-.idv__card:nth-child(2n){--dy:clamp(10px,3vw,18px)}
+@keyframes drift{
+  0%,100%{transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+  50%{transform:translateY(calc(var(--dy,0px) - 9px)) rotate(calc(var(--tilt,0deg) + 1.2deg))}}
+
+/* 装饰摆位：-ghost 低透明衬在文字后面，-sticker 小图带胶带贴边，其余是探头 */
+.deco--stickered::after{content:"";position:absolute;top:-8%;left:50%;width:62%;height:14px;
+  transform:translateX(-50%) rotate(-3deg);border-radius:2px;
+  background:linear-gradient(180deg,rgba(246,246,247,.36),rgba(246,246,247,.14));
+  box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.deco__gate-left{left:calc(-1*var(--pad));bottom:2vh;width:min(42vw,190px)}
+.deco__gate-right{right:calc(-1*var(--pad));bottom:1vh;width:min(29vw,126px)}
+.deco__gate-ghost{right:-8vw;top:6vh;width:min(66vw,320px);z-index:-2}
+.deco__open-ghost{right:-11vw;top:-6%;width:min(58vw,270px)}
+.deco__open-sticker{right:3vw;bottom:4%;width:min(25vw,94px)}
+.deco__body1-ghost{left:-17vw;top:4%;width:min(70vw,320px)}
+.deco__body1-sticker{left:5vw;bottom:-4%;width:min(24vw,88px)}
+.deco__strip-sticker{right:2vw;top:-24px;width:min(26vw,96px)}
+.deco__body2-ghost{right:-18vw;bottom:-2%;width:min(62vw,290px)}
+.deco__cake-left{left:1vw;bottom:4%;width:min(24vw,92px)}
+.deco__cake-right{right:1vw;bottom:14%;width:min(22vw,84px)}
+.deco__end-left{left:-13vw;bottom:-8%;width:min(44vw,190px)}
+.deco__end-right{right:-10vw;bottom:-6%;width:min(34vw,150px)}
 /* 等素材下完的封面门：只把呼吸放慢，不出现进度条 */
 .gate.is-waiting .cue{border-color:rgba(204,255,51,.42)}
 .gate.is-waiting .cue::after{animation:pulse 2.6s ease-out infinite}
@@ -255,6 +319,16 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
     <p class="stamp" aria-label="生日当天，十月七日"><em>10.07</em></p>
     <span class="cue" aria-hidden="true"></span>
   </div>
+  <!-- 装饰（13 号票）：封面角落两个探头 + 一个低透明剪影，只铺气氛，不拦点击。 -->
+  <figure class="deco deco--float deco--tilt deco__gate-left" aria-hidden="true" style="--tilt:-5deg">
+    <img src="角色/cutout/04.webp" alt="" loading="lazy" decoding="async">
+  </figure>
+  <figure class="deco deco--float deco--tilt deco__gate-right" aria-hidden="true" style="--tilt:7deg">
+    <img src="角色/cutout/09.webp" alt="" loading="lazy" decoding="async">
+  </figure>
+  <figure class="deco deco--ghost deco--tilt deco__gate-ghost" aria-hidden="true" style="--tilt:-9deg">
+    <img src="角色/cutout/02.webp" alt="" loading="lazy" decoding="async">
+  </figure>
   <button type="button" class="gate__enter" id="gate-enter"><span class="sr-only">进入贺卡</span></button>
 </section>
 
@@ -263,42 +337,72 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   <!-- 开场一句（02 号票接管逐字与跳过） -->
   <section class="sec">
     <p class="opening__line reveal"><span class="opening__full">新岁开启大乱斗。</span></p>
+    <figure class="deco deco--ghost deco--tilt deco__open-ghost" aria-hidden="true" style="--tilt:8deg">
+      <img src="角色/cutout/07.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <figure class="deco deco--float deco--tilt deco--stickered deco__open-sticker" aria-hidden="true" style="--tilt:6deg">
+      <img src="角色/cutout/05.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <span class="spark" aria-hidden="true" style="left:5%;top:22%;font-size:15px">&#10022;</span>
+    <span class="spark" aria-hidden="true" style="right:14%;bottom:6%;font-size:11px;color:var(--sky)">&#10022;</span>
   </section>
 
   <!-- 正文一（03 号票接管分位出现） -->
   <section class="sec sec--tight">
     <p class="body__text reveal">烦恼直接原地炸飞，<br>快乐无限疯狂刷新。</p>
+    <figure class="deco deco--ghost deco--tilt deco__body1-ghost" aria-hidden="true" style="--tilt:-10deg">
+      <img src="角色/cutout/06.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <figure class="deco deco--float deco--tilt deco--stickered deco__body1-sticker" aria-hidden="true" style="--tilt:-7deg">
+      <img src="角色/cutout/03.webp" alt="" loading="lazy" decoding="async">
+    </figure>
   </section>
 
   <!-- 照片带（04 号票：横滑、错落拼贴、懒加载；分组与顺序来自脚本里的 PHOTOS） -->
   <section class="band" aria-label="照片带">
     <div class="strip" id="photo-strip"></div>
+    <figure class="deco deco--float deco--tilt deco--stickered deco__strip-sticker" aria-hidden="true" style="--tilt:9deg">
+      <img src="角色/cutout/08.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <span class="spark" aria-hidden="true" style="left:6%;top:-10px;font-size:12px">&#10022;</span>
   </section>
 
   <!-- 正文二（03 号票接管分位出现） -->
   <section class="sec">
     <p class="body__text reveal">保持抽象精神状态，<br>好事持续疯狂砸来。</p>
+    <figure class="deco deco--ghost deco--tilt deco__body2-ghost" aria-hidden="true" style="--tilt:9deg">
+      <img src="角色/cutout/05.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <span class="spark" aria-hidden="true" style="right:8%;top:16%;font-size:13px;color:var(--hot)">&#10022;</span>
   </section>
 
-  <!-- 角色应援（12 号票：第五人格元素，图由出品人提供，压到 560px/张） -->
-  <section class="band band--idv" aria-label="角色应援">
+  <!-- 角色群像（12 号票改版：第五人格只做装饰，人像已抠成透明底 webp） -->
+  <section class="band band--idv" aria-label="角色群像">
     <p class="kicker idv__label reveal">Identity V</p>
+    <p class="idv__watermark" aria-hidden="true">Identity V</p>
     <div class="idv" id="idv-band">
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/01.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/02.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/03.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/04.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/05.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="703" data-src="角色/06.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/07.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="788" data-src="角色/08.jpg"></figure>
-      <figure class="idv__card"><img alt="" width="560" height="1085" data-src="角色/09.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="525" height="679" data-src="角色/cutout/01.webp"></figure>
+      <figure class="idv__card"><img alt="" width="511" height="696" data-src="角色/cutout/02.webp"></figure>
+      <figure class="idv__card"><img alt="" width="418" height="642" data-src="角色/cutout/03.webp"></figure>
+      <figure class="idv__card"><img alt="" width="525" height="697" data-src="角色/cutout/04.webp"></figure>
+      <figure class="idv__card"><img alt="" width="525" height="700" data-src="角色/cutout/05.webp"></figure>
+      <figure class="idv__card"><img alt="" width="558" height="699" data-src="角色/cutout/06.webp"></figure>
+      <figure class="idv__card"><img alt="" width="517" height="699" data-src="角色/cutout/07.webp"></figure>
+      <figure class="idv__card"><img alt="" width="407" height="622" data-src="角色/cutout/08.webp"></figure>
+      <figure class="idv__card"><img alt="" width="271" height="672" data-src="角色/cutout/09.webp"></figure>
     </div>
   </section>
 
   <!-- 蛋糕与蜡烛（05 号票：点一下或按住吹灭、data-candles） -->
   <section class="sec" aria-label="生日蛋糕">
     <div class="cake">
+      <span class="blob" aria-hidden="true" style="left:50%;bottom:-6%;width:min(76vw,340px);height:190px;transform:translateX(-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(255,46,136,.3),rgba(255,46,136,0) 70%)"></span>
+      <figure class="deco deco--float deco--tilt deco__cake-left" aria-hidden="true" style="--tilt:-6deg">
+        <img src="角色/cutout/01.webp" alt="" loading="lazy" decoding="async">
+      </figure>
+      <figure class="deco deco--float deco--tilt deco__cake-right" aria-hidden="true" style="--tilt:8deg">
+        <img src="角色/cutout/03.webp" alt="" loading="lazy" decoding="async">
+      </figure>
       <button type="button" class="cake__candles" id="candles">
         <span class="sr-only">吹灭蜡烛</span>
         <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
@@ -318,6 +422,12 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   <!-- 结尾（06 号票：滑到底触发一段持续的礼花连爆） -->
   <section class="sec">
     <p class="ending__line reveal">新岁狂飙，快乐永不宕机。</p>
+    <figure class="deco deco--tilt deco__end-left" aria-hidden="true" style="--tilt:-4deg">
+      <img src="角色/cutout/06.webp" alt="" loading="lazy" decoding="async">
+    </figure>
+    <figure class="deco deco--tilt deco__end-right" aria-hidden="true" style="--tilt:6deg">
+      <img src="角色/cutout/02.webp" alt="" loading="lazy" decoding="async">
+    </figure>
   </section>
 
 </main>
