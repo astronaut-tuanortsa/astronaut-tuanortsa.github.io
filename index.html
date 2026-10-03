@@ -233,21 +233,25 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   .cake__candles.is-blowing .candle{transform:none}
   html[data-candles="out"] .smoke{animation:none}
   .has-js .wall .shot,.has-js .wall.is-open .shot{opacity:1;animation:none}
-  .deco--float,.idv__card{animation:none}
+  .deco--float{animation:none}
 }
-  /* ===== 画面装饰层（13 号票：第五人格只做装饰，人像已抠图）=====
-     背景光斑+细网格铺底，人像以剪影/贴纸/探头的形式分散在各段边缘；
+  /* ===== 画面装饰层（13 号票：第五人格只做装饰，人像已抠图；16 号票：场景图当背景）=====
+     最底层是第五人格场景图（fixed + cover，上面用统一暗度与暗角压住），
+     光斑与网格只做点缀；人像以剪影/贴纸/探头的形式分散在各段边缘；
      全部 pointer-events:none，不抢点击、不参与状态机。 */
 body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   background-color:var(--bg);
   background-image:
     var(--grain),
+    linear-gradient(180deg,rgba(8,8,11,.34),rgba(8,8,11,.5)),
     radial-gradient(132% 96% at 50% 40%,rgba(10,10,13,0) 42%,rgba(4,4,7,.72) 100%),
     radial-gradient(62% 40% at 8% 6%,rgba(255,46,136,.13),rgba(255,46,136,0) 70%),
     radial-gradient(58% 38% at 94% 22%,rgba(46,230,255,.11),rgba(46,230,255,0) 68%),
-    radial-gradient(84% 46% at 46% 106%,rgba(204,255,51,.10),rgba(204,255,51,0) 72%);
-  background-size:140px 140px,auto,auto,auto,auto;
-  background-repeat:repeat,no-repeat,no-repeat,no-repeat,no-repeat}
+    radial-gradient(84% 46% at 46% 106%,rgba(204,255,51,.10),rgba(204,255,51,0) 72%),
+    url("背景/hall.webp");
+  background-size:140px 140px,auto,auto,auto,auto,auto,cover;
+  background-repeat:repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat,no-repeat;
+  background-position:0 0,center,center,center,center,center,50% 40%}
 body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   background-image:
     linear-gradient(rgba(246,246,247,.032) 1px,transparent 1px),
@@ -266,37 +270,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 .spark{position:absolute;z-index:-1;pointer-events:none;font-weight:900;line-height:1;
   color:var(--acid);text-shadow:0 0 14px rgba(204,255,51,.55)}
 
-  /* ===== 角色群像带（12 号票改版：抠图人像只当装饰，不再是卡片墙）===== */
-.band--idv{display:block;overflow:visible;
-  background:radial-gradient(74% 62% at 50% 98%,rgba(204,255,51,.10),rgba(204,255,51,0) 72%)}
-.band--idv::after{content:"";position:absolute;left:7%;right:7%;bottom:clamp(16px,4.5vw,26px);height:1px;
-  background:linear-gradient(90deg,transparent,rgba(204,255,51,.6),rgba(46,230,255,.5),transparent);
-  box-shadow:0 0 18px rgba(204,255,51,.35)}
-.idv__watermark{position:absolute;left:50%;top:46%;z-index:0;margin:0;
-  transform:translate(-50%,-50%) rotate(-4deg);
-  font-size:clamp(50px,16vw,100px);font-weight:900;letter-spacing:.08em;text-transform:uppercase;
-  white-space:nowrap;color:transparent;-webkit-text-stroke:1px rgba(246,246,247,.11)}
-.idv{position:relative;z-index:1;display:flex;align-items:flex-end;gap:clamp(1px,1.2vw,8px);
-  padding:clamp(12px,3.4vw,20px) var(--pad) clamp(28px,7vw,40px);
-  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none}
-.idv::-webkit-scrollbar{display:none}
-.idv__label{position:relative;z-index:1;margin:0 0 clamp(6px,2vw,10px);padding:0 var(--pad)}
-.idv__card{position:relative;margin:0;flex:0 0 auto;
-  transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg));
-  animation:drift 9s ease-in-out infinite}
-.idv__card::before{content:"";position:absolute;left:-12%;right:-12%;bottom:0;height:56%;z-index:-1;
-  border-radius:50%;filter:blur(7px);
-  background:radial-gradient(50% 58% at 50% 64%,rgba(204,255,51,.22),rgba(204,255,51,0) 72%)}
-.idv__card img{display:block;width:auto;height:clamp(146px,36vh,252px);
-  filter:drop-shadow(0 14px 24px rgba(0,0,0,.62))}
-.idv__card:nth-child(2n){--dy:clamp(10px,3vw,18px);animation-duration:11s;animation-delay:-3s}
-.idv__card:nth-child(2n) img{height:clamp(166px,42vh,286px)}
-.idv__card:nth-child(2n)::before{background:radial-gradient(50% 58% at 50% 64%,rgba(255,46,136,.24),rgba(255,46,136,0) 72%)}
-.idv__card:nth-child(3n){--tilt:-1.8deg;--dy:clamp(6px,2vw,12px);animation-duration:13s;animation-delay:-6s}
-.idv__card:nth-child(3n) img{height:clamp(134px,33vh,232px)}
-.idv__card:nth-child(3n)::before{background:radial-gradient(50% 58% at 50% 64%,rgba(46,230,255,.24),rgba(46,230,255,0) 72%)}
-.idv__card:nth-child(3n+1){--tilt:1.4deg}
 @keyframes drift{
   0%,100%{transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
   50%{transform:translateY(calc(var(--dy,0px) - 9px)) rotate(calc(var(--tilt,0deg) + 1.2deg))}}
@@ -414,23 +387,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       <img src="角色/cutout/05.webp" alt="" loading="lazy" decoding="async">
     </figure>
     <span class="spark" aria-hidden="true" style="right:8%;top:16%;font-size:13px;color:var(--hot)">&#10022;</span>
-  </section>
-
-  <!-- 角色群像（12 号票改版：第五人格只做装饰，人像已抠成透明底 webp） -->
-  <section class="band band--idv" aria-label="角色群像">
-    <p class="kicker idv__label reveal">Identity V</p>
-    <p class="idv__watermark" aria-hidden="true">Identity V</p>
-    <div class="idv" id="idv-band">
-      <figure class="idv__card"><img alt="" width="525" height="679" data-src="角色/cutout/01.webp"></figure>
-      <figure class="idv__card"><img alt="" width="511" height="696" data-src="角色/cutout/02.webp"></figure>
-      <figure class="idv__card"><img alt="" width="418" height="642" data-src="角色/cutout/03.webp"></figure>
-      <figure class="idv__card"><img alt="" width="525" height="697" data-src="角色/cutout/04.webp"></figure>
-      <figure class="idv__card"><img alt="" width="525" height="700" data-src="角色/cutout/05.webp"></figure>
-      <figure class="idv__card"><img alt="" width="558" height="699" data-src="角色/cutout/06.webp"></figure>
-      <figure class="idv__card"><img alt="" width="517" height="699" data-src="角色/cutout/07.webp"></figure>
-      <figure class="idv__card"><img alt="" width="407" height="622" data-src="角色/cutout/08.webp"></figure>
-      <figure class="idv__card"><img alt="" width="271" height="672" data-src="角色/cutout/09.webp"></figure>
-    </div>
   </section>
 
   <!-- 蛋糕与蜡烛（05 号票：点一下或按住吹灭、data-candles） -->
@@ -883,9 +839,9 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   })();
 
   /* ---------- 先下载完素材再浏览（12 号票 + 15 号票改版）----------
-     门后一次下完：9 张抠图 + 15 张照片 + 背景音乐，全部落地才允许进门，
-     滑动时不再有「边滑边下」的抖动。进度写进 `--load`（0-1），`封面门` 用它
-     在圆环外面画一圈细进度环；`data-preload` 仍是可驱动的缝：loading / ready。
+     门后一次下完：9 张装饰抠图 + 14 张照片 + 1 张背景场景图 + 背景音乐，全部
+     落地才允许进门，滑动时不再有「边滑边下」的抖动。进度写进 --load（0-1），
+     封面门 用它画外面的细进度环；data-preload 是缝：loading / ready。
      懒加载退化成兜底——预载已经把同一批 URL 塞进浏览器缓存，命中即显示。 */
   var Preload = (function () {
     var music = document.getElementById("music");
@@ -922,7 +878,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       if (settled >= total) finish();
     }
 
-    /* 先下进缓存；是抠图就把 src 补上，是照片只暖缓存，交给懒加载命中。 */
+    /* 只把 URL 暖进缓存，页面上的懒加载照旧兜底；顺带去重，
+       免得同一张图被算两遍、进度条走两步才动一格。 */
     function pullSrc(src, onDone) {
       var pre = new Image();
       pre.onload = function () { if (pre.decode) pre.decode().then(onDone, onDone); else onDone(); };
@@ -930,27 +887,25 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       pre.src = src;
     }
 
-    function pull(img) {
-      var src = img.getAttribute("data-src");
-      if (!src) { step(); return; }
-      pullSrc(src, function () {
-        img.removeAttribute("data-src");
-        img.setAttribute("src", src);
-        step();
+    var seen = {};
+    function uniqueUrls(list) {
+      return list.filter(function (url) {
+        if (!url || seen[url]) return false;
+        seen[url] = true;
+        return true;
       });
     }
-
-    /* 照片带/照片墙那 14 张只按 URL 暖缓存，交给懒加载命中；
-       这里排除掉它们，免得同一张图被算两遍、进度条走两步才动一格。 */
-    var imgs = [].slice.call(document.querySelectorAll("img[data-src]")).filter(function (img) {
-      return !img.closest(".shot");
-    });
-    var photoUrls = PHOTOS.map(function (photo) { return photo.src; });
-    total = imgs.length + photoUrls.length + 1;   /* + 背景音乐 */
+    var decoUrls = uniqueUrls([].slice.call(document.querySelectorAll(".deco img[src]")).map(function (img) {
+      return img.getAttribute("src");
+    }));
+    var photoUrls = uniqueUrls(PHOTOS.map(function (photo) { return photo.src; }));
+    var bgUrl = "背景/hall.webp";   /* 与 body::before 的 background-image 保持一致 */
+    total = decoUrls.length + photoUrls.length + 2;   /* + 背景场景图 + 背景音乐 */
     root.setAttribute("data-preload", "loading");
     if (gateEl) gateEl.classList.add("is-loading");   /* 门后在下：圆环先转起来，不必等点击 */
-    imgs.forEach(pull);
+    decoUrls.forEach(function (src) { pullSrc(src, step); });
     photoUrls.forEach(function (src) { pullSrc(src, step); });
+    pullSrc(bgUrl, step);
 
     var audioSettled = false;
     function audioStep() { if (!audioSettled) { audioSettled = true; step(); } }
