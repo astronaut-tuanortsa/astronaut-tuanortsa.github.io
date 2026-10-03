@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-card-state="cover" data-candles="lit" data-music="idle">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0d">
+<!-- 这张贺卡是私人的：不索引、不做分享预览（见 spec 的 Out of Scope）。 -->
+<meta name="robots" content="noindex, nofollow">
+<title>生日快乐</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0d'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23ccff33'/%3E%3C/svg%3E">
+<style>
+/* ===== 基础 ===== */
+:root{
+  --bg:#0a0a0d;
+  --ink:#f6f6f7;
+  --dim:#9a9aa6;
+  --acid:#ccff33;
+  --hot:#ff2e88;
+  --sky:#2ee6ff;
+  --pad:clamp(18px,5.5vw,30px);
+  --maxw:620px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:"PingFang SC","HarmonyOS Sans SC","Noto Sans SC","Source Han Sans SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  line-height:1.55;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+img{display:block;max-width:100%}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ===== 礼花画布 ===== */
+#confetti{position:fixed;inset:0;width:100%;height:100%;z-index:50;pointer-events:none}
+
+/* ===== 常驻静音开关（07 号票）=====
+   固定在右上角、任何状态下都在；关掉的是声音不是播放本身。 */
+.music-toggle{
+  position:fixed;z-index:70;
+  top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));
+  display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;padding:0;
+  border:1px solid rgba(246,246,247,.22);border-radius:50%;
+  background:rgba(10,10,13,.55);color:var(--ink);
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+  transition:color .2s ease,border-color .2s ease;
+}
+.music-toggle:hover{border-color:rgba(204,255,51,.6)}
+.music-toggle:focus-visible{outline:2px solid var(--acid);outline-offset:3px}
+.music-toggle svg{display:block;width:21px;height:21px}
+.music-toggle__speaker{fill:currentColor;stroke:none}
+.music-toggle__wave,.music-toggle__slash{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+.music-toggle__slash{opacity:0}
+.music-toggle__wave{transition:opacity .2s ease}
+.music-toggle[aria-pressed="true"]{color:var(--dim);border-color:rgba(246,246,247,.14)}
+.music-toggle[aria-pressed="true"] .music-toggle__wave{opacity:0}
+.music-toggle[aria-pressed="true"] .music-toggle__slash{opacity:1}
+html:not(.has-js) .music-toggle{display:none}
+
+/* ===== 封面门 ===== */
+html[data-card-state="cover"]{overflow:hidden;height:100%}
+html[data-card-state="cover"] body{height:100%;overflow:hidden}
+.gate{
+  position:fixed;inset:0;z-index:60;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(var(--pad) + env(safe-area-inset-top)) var(--pad) calc(var(--pad) + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(115% 75% at 8% 4%,#1c1035 0%,rgba(28,16,53,0) 62%),
+    radial-gradient(95% 70% at 96% 92%,#05301f 0%,rgba(5,48,31,0) 58%),
+    var(--bg);
+  touch-action:none;
+  transition:opacity .7s ease,transform .7s cubic-bezier(.2,.85,.2,1),visibility 0s linear .7s;
+}
+html:not([data-card-state="cover"]) .gate{opacity:0;transform:translateY(-12%) scale(1.06);visibility:hidden;pointer-events:none}
+.gate__inner{position:relative;width:100%;max-width:var(--maxw)}
+.kicker{margin:0 0 14px;font-size:clamp(10px,2.9vw,13px);font-weight:800;letter-spacing:.4em;text-transform:uppercase;color:var(--acid)}
+.gate__title{margin:0;font-weight:900;font-size:clamp(56px,19vw,116px);line-height:.84;letter-spacing:-.045em}
+.gate__title span{display:block}
+.gate__title span:last-child{color:var(--hot)}
+.stamp{
+  margin:clamp(22px,7vw,38px) 0 0;
+  font-weight:900;font-size:clamp(50px,16vw,100px);line-height:.8;letter-spacing:-.05em;
+  color:transparent;-webkit-text-stroke:2px var(--acid);
+  transform:rotate(-3.5deg);
+}
+.stamp em{font-style:normal}
+@supports not ((-webkit-text-stroke:1px #fff)){
+  .stamp{color:var(--acid)}
+}
+.cue{display:block;margin:clamp(26px,8vw,46px) 0 0;width:34px;height:34px;border-radius:50%;border:2px solid var(--acid);position:relative}
+.cue::after{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--acid);animation:pulse 1.7s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.5);opacity:1}70%,100%{transform:scale(1.3);opacity:0}}
+.gate__enter{position:absolute;inset:0;width:100%;height:100%;padding:0;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* ===== 正文骨架 ===== */
+.sec{max-width:var(--maxw);margin:0 auto;padding:clamp(54px,13vw,92px) var(--pad)}
+.sec--tight{padding-top:0}
+.band{padding:clamp(40px,11vw,70px) 0}
+/* ===== 打字机开场（02 号票）===== */
+.opening__line{margin:0;position:relative;font-size:clamp(30px,8.6vw,46px);font-weight:900;line-height:1.12;letter-spacing:-.02em}
+.opening__typed{position:absolute;inset:0}
+.opening__caret{display:inline-block;width:.07em;height:1em;margin-left:.09em;vertical-align:-.1em;background:var(--acid);animation:caret 1.05s steps(1,end) infinite}
+@keyframes caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+.opening__typed.is-done .opening__caret{display:none}
+.body__text{position:relative;margin:0;font-size:clamp(17px,4.6vw,21px);line-height:1.95;color:#e4e4e8}
+.body__text::before{content:"";position:absolute;left:0;top:-26px;width:46px;height:5px;background:var(--hot)}
+.ending__line{margin:0;font-size:clamp(28px,8vw,42px);font-weight:900;line-height:1.2}
+
+/* ===== 照片带（04 号票：清单数据驱动、错落拼贴、懒加载）=====
+   脚本里的 PHOTOS 只决定「谁进带、谁进墙、什么顺序」；
+   这里的高度/位移/倾斜按位置循环，所以换顺序不必改版式代码。 */
+.strip{
+  display:flex;align-items:flex-start;gap:clamp(10px,3vw,16px);
+  padding:clamp(16px,5vw,24px) var(--pad) clamp(26px,8vw,38px);
+  overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.strip::-webkit-scrollbar{display:none}
+.shot{margin:0;flex:0 0 auto;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+.shot img{border-radius:7px;background:#17171d;box-shadow:0 20px 44px rgba(0,0,0,.55)}
+.strip .shot img{height:clamp(168px,42vw,282px);width:auto}
+.strip .shot:nth-child(2n) img{height:clamp(198px,50vw,330px)}
+.strip .shot:nth-child(3n) img{height:clamp(150px,38vw,250px)}
+.strip .shot:nth-child(3n){--tilt:-2.4deg}
+.strip .shot:nth-child(3n+1){--tilt:1.8deg}
+.strip .shot:nth-child(2n){--dy:clamp(8px,2.4vw,14px)}
+.strip .shot:nth-child(5n){--dy:clamp(14px,4.2vw,22px)}
+
+/* ===== 蛋糕与蜡烛（05 号票：点一下或按住吹灭）=====
+   整把蜡烛本身就是一个按钮，不靠说明文字：火焰在动、按住会矮下去、熄灭后冒烟。 */
+.cake{display:flex;flex-direction:column;align-items:center;padding:0 var(--pad)}
+.cake__candles{
+  display:flex;align-items:flex-end;gap:clamp(18px,7vw,30px);
+  margin:0;padding:12px 8px 4px;
+  background:none;border:0;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;touch-action:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.cake__candles:focus-visible{outline:2px solid var(--acid);outline-offset:8px;border-radius:14px}
+.candle{
+  position:relative;display:block;width:9px;height:clamp(40px,11vw,56px);border-radius:3px;
+  background:linear-gradient(#fff3c4,#ffb020);
+  transform-origin:50% 100%;
+  transition:transform .42s ease,opacity .42s ease;
+}
+.flame{
+  position:absolute;left:50%;top:-18px;width:13px;height:21px;margin-left:-6.5px;
+  border-radius:50% 50% 46% 46%;
+  background:radial-gradient(circle at 50% 72%,#fff 0 20%,#ffd42e 32% 58%,rgba(255,92,0,.9) 74%,rgba(255,92,0,0) 80%);
+  animation:flicker 1.5s ease-in-out infinite alternate;
+  transition:opacity .3s ease,transform .3s ease;
+}
+@keyframes flicker{from{transform:scale(1);opacity:.94}to{transform:scale(1.07,.95) translateY(-1px);opacity:1}}
+/* 按住时先矮下去：这点进度感就是「正在吹」的反馈。 */
+.cake__candles.is-blowing .candle{transform:scale(.9,.93);opacity:.82}
+/* 一缕白烟代替文字，说明火已经灭了。 */
+.smoke{
+  position:absolute;left:50%;top:-15px;width:9px;height:9px;margin-left:-4.5px;
+  border-radius:50%;background:rgba(240,240,245,.75);filter:blur(3px);opacity:0;pointer-events:none;
+}
+html[data-candles="out"] .flame{animation:none;opacity:0;transform:scale(.2,.45) translateY(-5px)}
+html[data-candles="out"] .cake__candles{cursor:default}
+html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
+@keyframes smoke{0%{opacity:0;transform:translateY(0) scale(.5)}25%{opacity:.8}100%{opacity:0;transform:translateY(-30px) scale(2.6)}}
+.cake__top{width:clamp(150px,50vw,236px);height:clamp(46px,13vw,68px);border-radius:12px 12px 8px 8px;background:linear-gradient(#ffb3d2,#ff2e88);box-shadow:0 24px 46px rgba(255,46,136,.3)}
+.cake__plate{width:clamp(184px,60vw,286px);height:9px;border-radius:50%;background:#26262e;margin-top:-4px}
+
+/* ===== 照片墙（06 号票：结尾一次铺开的不规则拼贴）=====
+   两列流式排布打底，再按位置给每张换宽度、偏到一侧、加一点倾斜。
+   挪的是位置不是画面：img 始终 width:100% / height:auto，整张照片都看得见。 */
+.wall{columns:2;column-gap:clamp(9px,2.6vw,14px);padding:0 var(--pad)}
+.wall .shot{margin:0 auto clamp(9px,2.6vw,14px);break-inside:avoid;width:var(--wall-w,100%)}
+.wall .shot img{width:100%;height:auto;border-radius:7px;background:#17171d;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.wall .shot:nth-child(3n+1){--wall-w:100%;--tilt:1.3deg;margin-left:0;margin-right:0}
+.wall .shot:nth-child(3n+2){--wall-w:88%;--tilt:-2deg;margin-left:auto;margin-right:0}
+.wall .shot:nth-child(3n){--wall-w:93%;--tilt:1.8deg;margin-left:0;margin-right:auto}
+/* 「一次铺开」：卷到墙时整片一起错落落下，而不是随滚动一张张冒出来。 */
+.has-js .wall .shot{opacity:0}
+.has-js .wall.is-open .shot{animation:wall-in .82s cubic-bezier(.2,.85,.2,1) both;animation-delay:calc(var(--d,0) * 65ms)}
+.wall .shot:nth-child(1){--d:0}
+.wall .shot:nth-child(2){--d:1}
+.wall .shot:nth-child(3){--d:2}
+.wall .shot:nth-child(4){--d:3}
+.wall .shot:nth-child(5){--d:4}
+.wall .shot:nth-child(6){--d:5}
+.wall .shot:nth-child(n+7){--d:6}
+@keyframes wall-in{
+  from{opacity:0;transform:translateY(30px) scale(.95) rotate(var(--tilt,0deg))}
+  to{opacity:1;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+}
+
+#end-sentinel{height:1px}
+
+/* ===== 滚动揭示与动效收敛 ===== */
+.has-js .reveal{opacity:0;transform:translateY(28px);transition:opacity .85s ease,transform .85s cubic-bezier(.2,.85,.2,1)}
+.has-js .reveal.is-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .gate{transition:none}
+  .has-js .reveal{opacity:1;transform:none;transition:none}
+  .flame,.cue::after,.opening__caret{animation:none}
+  .opening__caret{display:none}
+  .candle,.flame{transition:none}
+  .cake__candles.is-blowing .candle{transform:none}
+  html[data-candles="out"] .smoke{animation:none}
+  .has-js .wall .shot,.has-js .wall.is-open .shot{opacity:1;animation:none}
+}
+</style>
+<script>document.documentElement.className += " has-js";</script>
+</head>
+<body>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<!-- 常驻静音开关（07 号票）：固定在右上角，任何状态下都能点。 -->
+<button type="button" id="music-toggle" class="music-toggle" aria-pressed="false" aria-label="静音背景音乐">
+  <svg class="music-toggle__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path class="music-toggle__speaker" d="M4 9.5h3.2L12 5.6v12.8L7.2 14.5H4z"/>
+    <path class="music-toggle__wave" d="M15.2 8.7a4.6 4.6 0 0 1 0 6.6"/>
+    <path class="music-toggle__wave" d="M17.9 6.1a8.3 8.3 0 0 1 0 11.8"/>
+    <line class="music-toggle__slash" x1="4.8" y1="19.6" x2="19.2" y2="4.4"/>
+  </svg>
+</button>
+
+<!-- ===== 封面门 ===== -->
+<section id="gate" class="gate" aria-label="封面门">
+  <div class="gate__inner">
+    <!-- 排版性英文 kicker；允许直接删除，不影响任何逻辑（spec「文案与排版文字」）。 -->
+    <p class="kicker">Happy Birthday · Tap to enter</p>
+    <!-- TODO(文案)：封面标题待出品人定稿，这里暂用真名占位。 -->
+    <h1 class="gate__title"><span>帅</span><span>生日快乐</span></h1>
+    <!-- 排版性出生日期戳；TODO(文案)：年份待出品人确认（如 2007.10.07）。 -->
+    <p class="stamp" aria-label="生日当天，十月七日"><em>10.07</em></p>
+    <span class="cue" aria-hidden="true"></span>
+  </div>
+  <button type="button" class="gate__enter" id="gate-enter"><span class="sr-only">进入贺卡</span></button>
+</section>
+
+<main id="card">
+
+  <!-- 开场一句（02 号票接管逐字与跳过） -->
+  <section class="sec">
+    <!-- TODO(文案)：开场一句待出品人定稿。 -->
+    <p class="opening__line reveal"><span class="opening__full">有些话，想慢慢说给你听。</span></p>
+  </section>
+
+  <!-- 正文一（03 号票接管分位出现） -->
+  <section class="sec sec--tight">
+    <!-- TODO(文案)：正文一待出品人定稿。 -->
+    <p class="body__text reveal">认识你之后，很多本来普通的日子都变得有点不一样。</p>
+  </section>
+
+  <!-- 照片带（04 号票：横滑、错落拼贴、懒加载；分组与顺序来自脚本里的 PHOTOS） -->
+  <section class="band" aria-label="照片带">
+    <div class="strip" id="photo-strip"></div>
+  </section>
+
+  <!-- 正文二（03 号票接管分位出现） -->
+  <section class="sec">
+    <!-- TODO(文案)：正文二待出品人定稿。 -->
+    <p class="body__text reveal">想不出比「生日快乐」更合适的开场，那就先把这句话说完。</p>
+  </section>
+
+  <!-- 蛋糕与蜡烛（05 号票：点一下或按住吹灭、data-candles） -->
+  <section class="sec" aria-label="生日蛋糕">
+    <div class="cake">
+      <button type="button" class="cake__candles" id="candles">
+        <span class="sr-only">吹灭蜡烛</span>
+        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
+        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
+        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
+      </button>
+      <div class="cake__top"></div>
+      <div class="cake__plate"></div>
+    </div>
+  </section>
+
+  <!-- 照片墙（06 号票：卷到墙时整片错落铺开；分组与顺序同样来自 PHOTOS） -->
+  <section class="band" aria-label="照片墙">
+    <div class="wall" id="photo-wall"></div>
+  </section>
+
+  <!-- 结尾（06 号票：滑到底触发一段持续的礼花连爆） -->
+  <section class="sec">
+    <!-- TODO(文案)：结尾一句待出品人定稿。 -->
+    <p class="ending__line reveal">生日快乐，要一直开心。</p>
+  </section>
+
+</main>
+
+<div id="end-sentinel" aria-hidden="true"></div>
+
+<!-- 音乐源直接使用出品人提供的 MP4，不做转码（spec「音乐与手势解锁」）。 -->
+<audio id="music" src="音乐/8a5fbf3154dc3b6aac9a752b244e768a.mp4" loop preload="auto"></audio>
+
+<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var ORDER = ["cover", "open", "blown", "end"];
+
+  function state() { return root.getAttribute("data-card-state"); }
+
+  /* 状态只单向推进、不回退；允许跳级（例如不吹蜡烛直接滑到底）。 */
+  function advance(next) {
+    if (ORDER.indexOf(next) <= ORDER.indexOf(state())) return false;
+    root.setAttribute("data-card-state", next);
+    return true;
+  }
+
+  /* ---------- 照片清单：分组与顺序的唯一来源（04 号票）----------
+     想改「哪些照片进 `照片带`、哪些进 `照片墙`、先后怎么排」，只动这个数组。
+     版式（大小/位移/倾斜）由 .strip 的 nth-child 按位置循环，与具体照片无关；
+     每个条目的 w/h 是原始像素，只用来占位，防止加载完成后版式跳动。 */
+  var PHOTOS = [
+    { src: "照片/微信图片_20261003225334_124_24.jpg", w: 1600, h: 1600, group: "strip" },
+    { src: "照片/微信图片_20261003225410_125_24.jpg", w: 1024, h: 683, group: "strip" },
+    { src: "照片/微信图片_20261003225411_126_24.jpg", w: 768, h: 1024, group: "strip" },
+    { src: "照片/微信图片_20261003230239_127_24.jpg", w: 960, h: 1280, group: "strip" },
+    { src: "照片/微信图片_20261003230240_128_24.jpg", w: 960, h: 720, group: "strip" },
+    { src: "照片/微信图片_20261003230242_130_24.jpg", w: 480, h: 480, group: "strip" },
+    { src: "照片/微信图片_20261003230242_131_24.jpg", w: 1200, h: 1600, group: "wall" },
+    { src: "照片/微信图片_20261003230244_133_24.jpg", w: 960, h: 1282, group: "wall" },
+    { src: "照片/微信图片_20261003230245_134_24.jpg", w: 960, h: 1280, group: "wall" },
+    { src: "照片/微信图片_20261003230246_136_24.jpg", w: 1200, h: 1600, group: "wall" },
+    { src: "照片/微信图片_20261003230247_137_24.jpg", w: 1200, h: 1600, group: "wall" },
+    { src: "照片/微信图片_20261003230248_138_24.jpg", w: 810, h: 1440, group: "wall" },
+    { src: "照片/微信图片_20261003230249_139_24.jpg", w: 640, h: 480, group: "wall" },
+    { src: "照片/微信图片_20261003230250_140_24.jpg", w: 1024, h: 1366, group: "wall" }
+  ];
+
+  var Photos = (function () {
+    var armed = false;
+    var pending = [];
+
+    function figure(photo) {
+      var fig = document.createElement("figure");
+      fig.className = "shot";
+      var img = document.createElement("img");
+      img.alt = "";
+      img.width = photo.w;
+      img.height = photo.h;
+      img.loading = "lazy";
+      img.decoding = "async";
+      /* 只挂 data-src、不写 src：`封面门` 没点开之前，一张照片都不请求。 */
+      img.style.aspectRatio = photo.w + " / " + photo.h;
+      img.setAttribute("data-src", photo.src);
+      fig.appendChild(img);
+      return fig;
+    }
+
+    function render() {
+      var strip = document.getElementById("photo-strip");
+      var wall = document.getElementById("photo-wall");
+      PHOTOS.forEach(function (photo) {
+        var target = photo.group === "wall" ? wall : strip;
+        if (target) target.appendChild(figure(photo));
+      });
+      pending = [].slice.call(document.querySelectorAll(".shot img[data-src]"));
+    }
+
+    function load(img) {
+      var src = img.getAttribute("data-src");
+      if (!src) return;
+      img.removeAttribute("data-src");
+      img.setAttribute("src", src);
+    }
+
+    function loadAll() { pending.forEach(load); }
+
+    /* 开门后才开始观察。若在载入时就观察，照片带正落在首屏高度内，
+       浏览器会在封面背后把 6 张主图全下完，「首屏不等待全部照片」就落空。 */
+    function arm() {
+      if (armed) return;
+      armed = true;
+      if (!pending.length) return;
+      var canRatio = !!(window.CSS && CSS.supports && CSS.supports("aspect-ratio", "1 / 1"));
+      if (!canRatio || !("IntersectionObserver" in window)) { loadAll(); return; }
+
+      var strip = document.getElementById("photo-strip");
+      function observer(root, margin) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            load(entry.target);
+            io.unobserve(entry.target);
+          });
+        }, { root: root, rootMargin: margin, threshold: 0 });
+        return io;
+      }
+      /* 带内以自身为根、左右各留 520px：滑到附近先备好，但不预载整条；
+         墙内以视口为根，滚到附近才下。 */
+      var stripIO = observer(strip, "0px 520px 0px 520px");
+      var viewIO = observer(null, "520px 0px 520px 0px");
+      pending.forEach(function (img) {
+        (strip && strip.contains(img) ? stripIO : viewIO).observe(img);
+      });
+    }
+
+    render();
+
+    return { arm: arm };
+  })();
+
+  /* ---------- 照片墙：卷到墙时整片一次铺开（06 号票）----------
+     只负责在恰当的时机给容器加上 `is-open`；错落的延迟全部交给 CSS 的 nth-child。 */
+  var Wall = (function () {
+    var el = document.getElementById("photo-wall");
+    var opened = false;
+
+    function open() {
+      if (opened || !el) return;
+      opened = true;
+      el.classList.add("is-open");
+    }
+
+    if (el) {
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            open();
+            io.disconnect();
+          });
+        }, { rootMargin: "0px 0px -18% 0px", threshold: 0.08 });
+        io.observe(el);
+      } else {
+        /* 没有 Observer 就直接铺开，别让照片卡在 opacity:0。 */
+        open();
+      }
+    }
+
+    return { open: open };
+  })();
+
+  /* ---------- 礼花：canvas 粒子，三道护栏 ---------- */
+  var Confetti = (function () {
+    var canvas = document.getElementById("confetti");
+    var ctx = canvas.getContext("2d");
+    var reduceQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var COLORS = ["#ccff33", "#ff2e88", "#2ee6ff", "#ffffff", "#ffd42e"];
+    var parts = [];
+    var raf = 0;
+    var w = 0;
+    var h = 0;
+
+    function isReduced() { return !!(reduceQuery && reduceQuery.matches); }
+
+    /* 护栏一：粒子总数上限；护栏二：减弱动态效果下不发粒子；护栏三：低端设备自动降量。 */
+    function cap() {
+      if (isReduced()) return 0;
+      var cores = navigator.hardwareConcurrency || 8;
+      var mem = navigator.deviceMemory || 8;
+      return (cores <= 4 || mem <= 4) ? 110 : 240;
+    }
+
+    function resize() {
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.clientWidth || window.innerWidth;
+      h = canvas.clientHeight || window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function burst(x, y, count) {
+      var limit = cap();
+      if (!limit) return;
+      var room = limit - parts.length;
+      if (room <= 0) return;
+      count = Math.min(count, room);
+      for (var i = 0; i < count; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var speed = 2.2 + Math.random() * 7;
+        parts.push({
+          x: x, y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (2 + Math.random() * 3),
+          w: 5 + Math.random() * 7,
+          h: 8 + Math.random() * 12,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.36,
+          life: 1,
+          decay: 0.008 + Math.random() * 0.009,
+          color: COLORS[(Math.random() * COLORS.length) | 0]
+        });
+      }
+      if (!raf) raf = requestAnimationFrame(frame);
+    }
+
+    function frame() {
+      raf = 0;
+      ctx.clearRect(0, 0, w, h);
+      for (var i = parts.length - 1; i >= 0; i--) {
+        var p = parts[i];
+        p.vy += 0.3;
+        p.vx *= 0.988;
+        p.vy *= 0.988;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        p.life -= p.decay;
+        if (p.life <= 0 || p.y > h + 90) { parts.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5));
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+      if (parts.length) raf = requestAnimationFrame(frame);
+    }
+
+    function clear() { parts.length = 0; ctx.clearRect(0, 0, w, h); }
+
+    resize();
+    window.addEventListener("resize", resize);
+    window.addEventListener("orientationchange", resize);
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        if (raf) { cancelAnimationFrame(raf); raf = 0; }
+      } else if (parts.length && !raf) {
+        raf = requestAnimationFrame(frame);
+      }
+    });
+    if (reduceQuery && reduceQuery.addEventListener) {
+      reduceQuery.addEventListener("change", function () { if (isReduced()) clear(); });
+    }
+
+    return { burst: burst, clear: clear };
+  })();
+
+  /* ---------- 结尾礼花高潮：滑到底后连爆一段（06 号票）----------
+     有明确终点的一次性高潮；减弱动态效果下完全不连爆，页面照常走完。 */
+  var Finale = (function () {
+    var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var DURATION_MS = 4200;
+    var GAP_MS = 250;
+    var started = false;
+    var timer = 0;
+    var until = 0;
+
+    function reduced() { return !!(motionQuery && motionQuery.matches); }
+
+    function stop() {
+      if (timer) { clearTimeout(timer); timer = 0; }
+    }
+
+    function volley() {
+      timer = 0;
+      /* 切到别的 app 时不再排队；切回来也不补爆，高潮到点自然结束。 */
+      if (document.hidden) return;
+      Confetti.burst(
+        window.innerWidth * (0.14 + Math.random() * 0.72),
+        window.innerHeight * (0.16 + Math.random() * 0.4),
+        80 + ((Math.random() * 80) | 0)
+      );
+      if (Date.now() >= until) return;
+      timer = setTimeout(volley, GAP_MS);
+    }
+
+    function start() {
+      if (started) return;
+      started = true;
+      if (reduced()) return;
+      until = Date.now() + DURATION_MS;
+      volley();
+    }
+
+    if (motionQuery && motionQuery.addEventListener) {
+      motionQuery.addEventListener("change", function () { if (reduced()) stop(); });
+    }
+
+    return { start: start };
+  })();
+
+  /* ---------- 蜡烛：点一下或按住都能吹灭（05 号票）----------
+     轻点与按住最后都汇进同一个 blowOut()；全程只有触摸/指针，
+     不碰麦克风、不申请任何权限，外部能看到的结果只有 data-candles 与 data-card-state。 */
+  var Candles = (function () {
+    var box = document.getElementById("candles");
+    if (!box) return { blowOut: function () {} };
+    var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var HOLD_MS = 420;
+    var timer = 0;
+
+    function reduced() { return !!(motionQuery && motionQuery.matches); }
+    function isOut() { return root.getAttribute("data-candles") === "out"; }
+
+    function blowOut() {
+      if (timer) { clearTimeout(timer); timer = 0; }
+      if (isOut()) return;
+      root.setAttribute("data-candles", "out");
+      /* `礼花` 从蜡烛所在的位置炸开，而不是屏幕正中。 */
+      var r = box.getBoundingClientRect();
+      Confetti.burst(r.left + r.width / 2, Math.max(r.top, 0) + r.height * 0.2, 160);
+      advance("blown");
+      if (box.blur) box.blur();
+    }
+
+    function begin() {
+      if (isOut() || timer) return;
+      /* 减弱动态效果：不演「按住」这一段，直接熄灭，仪式照样能完成。 */
+      if (reduced()) { blowOut(); return; }
+      box.classList.add("is-blowing");
+      timer = setTimeout(blowOut, HOLD_MS);
+    }
+
+    function release() {
+      if (!timer) return;
+      clearTimeout(timer); timer = 0;
+      box.classList.remove("is-blowing");
+      blowOut();
+    }
+
+    /* 按下就开始：轻点在松手时熄灭，一直按住则撑到 HOLD_MS 自己熄灭。 */
+    box.addEventListener("pointerdown", begin);
+    box.addEventListener("pointerup", release);
+    box.addEventListener("pointercancel", release);
+    /* 键盘：Enter/Space 触发的 click 没有指针，detail 为 0，直接熄灭。 */
+    box.addEventListener("click", function (e) { if (!e.detail) blowOut(); });
+
+    return { blowOut: blowOut };
+  })();
+
+  /* ---------- 开场一句：逐字打出，点任意处跳过（02 号票）---------- */
+  var Opening = (function () {
+    var line = document.querySelector(".opening__line");
+    var full = line ? line.querySelector(".opening__full") : null;
+    var TEXT = full ? full.textContent : "";
+    var CHARS = Array.from ? Array.from(TEXT) : TEXT.split("");
+    var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var CHAR_MS = 78;
+    var START_MS = 240;
+    var glyphs = null;
+    var typed = null;
+    var timer = 0;
+    var typing = false;
+
+    function reduced() { return !!(motionQuery && motionQuery.matches); }
+
+    function caret() {
+      var el = document.createElement("span");
+      el.className = "opening__caret";
+      el.setAttribute("aria-hidden", "true");
+      return el;
+    }
+
+    if (line && full && TEXT) {
+      /* 整句留在原处当排版鬼影：不可见但占位，逐字层绝对覆盖其上，打字时不会把下面的内容顶来顶去。 */
+      full.setAttribute("aria-hidden", "true");
+      full.style.visibility = "hidden";
+      full.appendChild(caret());
+      typed = document.createElement("span");
+      typed.className = "opening__typed";
+      glyphs = document.createElement("span");
+      typed.appendChild(glyphs);
+      typed.appendChild(caret());
+      line.appendChild(typed);
+    }
+
+    function finish() {
+      if (timer) { clearTimeout(timer); timer = 0; }
+      typing = false;
+      if (!typed) return;
+      glyphs.textContent = TEXT;
+      typed.classList.add("is-done");
+    }
+
+    function start() {
+      if (!typed || !CHARS.length) return;
+      if (reduced()) { finish(); return; }
+      typing = true;
+      var shown = 0;
+      timer = setTimeout(function tick() {
+        shown += 1;
+        glyphs.textContent = CHARS.slice(0, shown).join("");
+        if (shown >= CHARS.length) { finish(); return; }
+        timer = setTimeout(tick, CHAR_MS);
+      }, START_MS);
+    }
+
+    function skip() { if (typing) finish(); }
+
+    /* 只在逐字进行中生效，所以点开 `封面门` 的那一次点击不会误触跳过（那一刻 typing 还是 false）。 */
+    var skipOn = window.PointerEvent ? ["pointerdown"] : ["touchstart", "mousedown"];
+    skipOn.forEach(function (type) {
+      document.addEventListener(type, skip, { capture: true, passive: true });
+    });
+    if (motionQuery && motionQuery.addEventListener) {
+      motionQuery.addEventListener("change", function () { if (reduced()) finish(); });
+    }
+
+    return { start: start, finish: finish };
+  })();
+
+  /* ---------- 音乐控制（07 号票）：一次手势解锁 + 常驻静音开关 ----------
+     静音走 audio.muted，而不是 pause()：轨道照常在后台走，取消静音时就地接着播，
+     既不会从头重来，也不会在滑动或切走时被中断。外部可见的只有 data-music：
+     idle（尚未解锁或播放失败）/ playing（在放）/ muted（在放但已静音）。 */
+  var gateEnter = document.getElementById("gate-enter");
+  var music = document.getElementById("music");
+  var musicToggle = document.getElementById("music-toggle");
+  var muted = false;
+  var unlocked = false;   /* 点过 `封面门` 之后才允许出声 */
+
+  function syncMusic() {
+    music.muted = muted;
+    if (muted && unlocked && !music.paused) {
+      root.setAttribute("data-music", "muted");
+    } else if (unlocked && !music.paused) {
+      root.setAttribute("data-music", "playing");
+    } else {
+      root.setAttribute("data-music", "idle");
+    }
+    musicToggle.setAttribute("aria-pressed", muted ? "true" : "false");
+    var label = muted ? "取消静音背景音乐" : "静音背景音乐";
+    musicToggle.setAttribute("aria-label", label);
+    musicToggle.title = label;
+  }
+
+  function tryPlay() {
+    if (!unlocked || !music.paused) { syncMusic(); return; }
+    var played = music.play();
+    if (played && typeof played.then === "function") played.then(syncMusic, syncMusic);
+    else syncMusic();
+  }
+
+  musicToggle.addEventListener("click", function () {
+    muted = !muted;
+    tryPlay();   /* 若轨道被系统按停，取消静音的那一刻就地续上 */
+  });
+
+  /* 切到其他应用再切回：只把被系统按停的音乐续上；页面进度与滚动位置一概不动，
+     播放位置由 <audio> 自己保留，所以是接着走而不是重置。 */
+  function resumeIfNeeded() {
+    if (document.visibilityState !== "visible" || !unlocked) return;
+    if (music.paused) tryPlay();
+  }
+  document.addEventListener("visibilitychange", resumeIfNeeded);
+  window.addEventListener("pageshow", function (event) { if (event.persisted) resumeIfNeeded(); });
+
+  syncMusic();
+
+  function openCard() {
+    if (state() !== "cover") return;
+    advance("open");
+    unlocked = true;
+    tryPlay();
+    Confetti.burst(window.innerWidth / 2, window.innerHeight * 0.44, 150);
+    window.scrollTo(0, 0);
+    Opening.start();
+    Photos.arm();
+    armReveal();
+    if (gateEnter.blur) gateEnter.blur();
+  }
+  gateEnter.addEventListener("click", openCard);
+
+  /* ---------- 滚到附近才揭示（减弱动态效果下由 CSS 直接显示）----------
+     `封面门` 打开前一概不观察：否则首屏里的正文一会在封面背后就把出场动效耗掉，
+     点进来时只剩一坨现成文字，两段正文也就失去了「分位出现」的意义。 */
+  var reveal = [].slice.call(document.querySelectorAll(".reveal"));
+  var revealIO = null;
+
+  function armReveal() {
+    if (revealIO) return;
+    if ("IntersectionObserver" in window) {
+      revealIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-in");
+          revealIO.unobserve(entry.target);
+        });
+      }, { rootMargin: "0px 0px -12% 0px", threshold: 0.12 });
+      reveal.forEach(function (el) { revealIO.observe(el); });
+    } else {
+      reveal.forEach(function (el) { el.classList.add("is-in"); });
+    }
+  }
+
+  /* 正常流程由 `封面门` 触发；万一页面以非 cover 状态载入，也兜住。 */
+  if (state() !== "cover") { armReveal(); Photos.arm(); }
+
+  /* 页尾之后没有可滚动空间，末尾元素永远越不过 `-12%` 那条判定线；
+     滑到底时兜底补上，免得结尾一句卡在 opacity:0 再也不出现。 */
+  function revealRest() {
+    if (revealIO) { revealIO.disconnect(); revealIO = null; }
+    reveal.forEach(function (el) { el.classList.add("is-in"); });
+  }
+
+  /* ---------- 滑到底 = 结尾状态 ---------- */
+  function reachEnd() {
+    if (state() === "cover") return;
+    advance("end");
+    Wall.open();
+    revealRest();
+    Finale.start();
+  }
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { if (entry.isIntersecting) reachEnd(); });
+    }, { threshold: 0.6 }).observe(document.getElementById("end-sentinel"));
+  } else {
+    window.addEventListener("scroll", function () {
+      if (window.innerHeight + window.pageYOffset >= document.body.scrollHeight - 12) reachEnd();
+    }, { passive: true });
+  }
+})();
+</script>
+</body>
+</html>

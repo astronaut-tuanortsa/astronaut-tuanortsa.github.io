@@ -1,0 +1,11 @@
+# 内部资料，不进公开仓库（发布到 GitHub Pages 的只有贺卡本身）
+.scratch/
+docs/
+AGENTS.md
+
+# 本机临时文件
+*.tmp
+.patch.tmp
+apply.tmp.ps1
+temp/
+*.log
