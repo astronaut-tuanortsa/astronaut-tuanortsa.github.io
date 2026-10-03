@@ -319,9 +319,18 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 .deco__cake-right{right:1vw;bottom:14%;width:min(22vw,84px)}
 .deco__end-left{left:-13vw;bottom:-8%;width:min(44vw,190px)}
 .deco__end-right{right:-10vw;bottom:-6%;width:min(34vw,150px)}
-/* 等素材下完的封面门：只把呼吸放慢，不出现进度条 */
+/* 等素材下完的封面门：呼吸放慢，圆环外面套一圈细进度环（`--load` 由脚本写 0-1）。 */
 .gate.is-waiting .cue{border-color:rgba(204,255,51,.42)}
 .gate.is-waiting .cue::after{animation:pulse 2.6s ease-out infinite}
+.cue::before{content:"";position:absolute;inset:-6px;border-radius:50%;pointer-events:none;opacity:0;
+  background:conic-gradient(var(--acid) calc(var(--load,0) * 1turn),rgba(204,255,51,.16) 0);
+  -webkit-mask:radial-gradient(closest-side,transparent 84%,#000 92%);
+  mask:radial-gradient(closest-side,transparent 84%,#000 92%);
+  transition:opacity .35s var(--ease)}
+.gate.is-loading .cue::before{opacity:1}
+.gate__load{margin:clamp(12px,3.4vw,16px) 0 0;font-size:clamp(11px,3vw,12px);letter-spacing:.16em;color:var(--dim);
+  font-variant-numeric:tabular-nums}
+.gate__load[hidden]{display:none}
 </style>
 <script>document.documentElement.className += " has-js";</script>
 </head>
@@ -348,6 +357,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     <!-- 排版性出生日期戳；TODO(文案)：年份待出品人确认（如 2007.10.07）。 -->
     <p class="stamp" aria-label="生日当天，十月七日"><em>10.07</em></p>
     <span class="cue" aria-hidden="true"></span>
+    <p class="gate__load" id="gate-load" aria-live="polite" hidden>正在准备素材</p>
   </div>
   <!-- 装饰（13 号票）：封面角落两个探头 + 一个低透明剪影，只铺气氛，不拦点击。 -->
   <figure class="deco deco--float deco--tilt deco__gate-left" aria-hidden="true" style="--tilt:-5deg">
@@ -465,7 +475,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 <div id="end-sentinel" aria-hidden="true"></div>
 
 <!-- 音乐源直接使用出品人提供的 MP4，不做转码（spec「音乐与手势解锁」）。 -->
-<audio id="music" src="音乐/8a5fbf3154dc3b6aac9a752b244e768a.mp4" loop preload="auto"></audio>
+<audio id="music" src="音乐/8a5fbf3154dc3b6aac9a752b244e768a.mp4" loop preload="auto" playsinline></audio>
 
 <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
 
@@ -872,20 +882,34 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     return { start: start, finish: finish };
   })();
 
-  /* ---------- 先下载再观看（12 号票）：素材在 `封面门` 背后一次下完 ----------
-     全站不到 3.5 MB，一次下完换滑动不卡。`data-preload` 是可驱动的缝：
-     loading（在下）/ ready（齐了）。原来「照片滑到附近才请求」是 13 号用户故事
-     的取舍，出品人这次明确要先下完再进；懒加载退化成兜底——预载已写好 src。 */
+  /* ---------- 先下载完素材再浏览（12 号票 + 15 号票改版）----------
+     门后一次下完：9 张抠图 + 15 张照片 + 背景音乐，全部落地才允许进门，
+     滑动时不再有「边滑边下」的抖动。进度写进 `--load`（0-1），`封面门` 用它
+     在圆环外面画一圈细进度环；`data-preload` 仍是可驱动的缝：loading / ready。
+     懒加载退化成兜底——预载已经把同一批 URL 塞进浏览器缓存，命中即显示。 */
   var Preload = (function () {
     var music = document.getElementById("music");
+    var gateEl = document.getElementById("gate");
+    var loadEl = document.getElementById("gate-load");
     var settled = 0;
     var total = 0;
     var done = false;
     var waiters = [];
+    var lastStep = Date.now();
+
+    function paint() {
+      var ratio = total ? settled / total : 1;
+      if (gateEl) gateEl.style.setProperty("--load", ratio.toFixed(3));
+      if (loadEl && !loadEl.hidden) loadEl.textContent = "正在准备素材 " + Math.round(ratio * 100) + "%";
+    }
 
     function finish() {
       if (done) return;
       done = true;
+      settled = total;
+      paint();
+      if (loadEl) loadEl.hidden = true;
+      if (gateEl) gateEl.classList.remove("is-loading");
       root.setAttribute("data-preload", "ready");
       var list = waiters; waiters = [];
       for (var i = 0; i < list.length; i++) list[i]();
@@ -893,29 +917,40 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 
     function step() {
       settled += 1;
+      lastStep = Date.now();
+      paint();
       if (settled >= total) finish();
+    }
+
+    /* 先下进缓存；是抠图就把 src 补上，是照片只暖缓存，交给懒加载命中。 */
+    function pullSrc(src, onDone) {
+      var pre = new Image();
+      pre.onload = function () { if (pre.decode) pre.decode().then(onDone, onDone); else onDone(); };
+      pre.onerror = onDone;
+      pre.src = src;
     }
 
     function pull(img) {
       var src = img.getAttribute("data-src");
-      if (!src) return;
-      var pre = new Image();
-      pre.onload = function () {
+      if (!src) { step(); return; }
+      pullSrc(src, function () {
         img.removeAttribute("data-src");
         img.setAttribute("src", src);
-        if (pre.decode) pre.decode().then(step, step); else step();
-      };
-      pre.onerror = function () {
-        img.removeAttribute("data-src");
         step();
-      };
-      pre.src = src;
+      });
     }
 
-    var imgs = [].slice.call(document.querySelectorAll("img[data-src]"));
-    total = imgs.length + 1;   /* + 背景音乐 */
+    /* 照片带/照片墙那 14 张只按 URL 暖缓存，交给懒加载命中；
+       这里排除掉它们，免得同一张图被算两遍、进度条走两步才动一格。 */
+    var imgs = [].slice.call(document.querySelectorAll("img[data-src]")).filter(function (img) {
+      return !img.closest(".shot");
+    });
+    var photoUrls = PHOTOS.map(function (photo) { return photo.src; });
+    total = imgs.length + photoUrls.length + 1;   /* + 背景音乐 */
     root.setAttribute("data-preload", "loading");
+    if (gateEl) gateEl.classList.add("is-loading");   /* 门后在下：圆环先转起来，不必等点击 */
     imgs.forEach(pull);
+    photoUrls.forEach(function (src) { pullSrc(src, step); });
 
     var audioSettled = false;
     function audioStep() { if (!audioSettled) { audioSettled = true; step(); } }
@@ -924,11 +959,15 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       music.addEventListener("error", audioStep);
       setTimeout(audioStep, 4000);   /* 音频慢或格式不支持时不拖住整张卡 */
     } else { audioStep(); }
-    setTimeout(finish, 15000);       /* 兜底：任何一张图卡住也不把人锁在封面 */
+    /* 兜底：连续 12 秒没有任何一份素材落地（断网 / 资源抽风）才不再锁人；
+       只要还在慢慢下，就让人继续在门后等，而不是放进去边滑边下。 */
+    setInterval(function () {
+      if (!done && Date.now() - lastStep > 12000) finish();
+    }, 2000);
 
     function whenReady(fn) { if (done) fn(); else waiters.push(fn); }
 
-    return { ready: function () { return done; }, whenReady: whenReady };
+    return { ready: function () { return done; }, whenReady: whenReady, paint: paint };
   })();
 
   /* ---------- 音乐控制（07 号票）：一次手势解锁 + 常驻静音开关 ----------
@@ -957,6 +996,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
   }
 
   function tryPlay() {
+    lastTry = Date.now();
     if (!unlocked || !music.paused) { syncMusic(); return; }
     var played = music.play();
     syncMusic();   /* play() 已同步把 paused 置 false，先报对状态，别让封面闪一下没在放 */
@@ -979,23 +1019,46 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 
   syncMusic();
 
+  var gateEl = document.getElementById("gate");
+  var gateLoad = document.getElementById("gate-load");
   var gateOpened = false;
   var gateWaiting = false;
 
-  /* 解锁必须发生在点击手势里：预载把「开门」推迟成了异步回调，
+  /* 解锁必须发生在手势里：预载把「开门」推迟成了异步回调，
      那时再 play() 手机浏览器会按自动播放策略直接拒播（音乐凭空消失）。
-     所以点下 `封面门` 的这一刻就先放起来，异步开门时只是接着播。 */
+     所以第一次点屏幕就先放起来——点哪儿都算（`封面门`、静音开关、任意空白处）。 */
   function unlockMusic() {
     if (unlocked) return;
     unlocked = true;
     tryPlay();
   }
+  var gestureOn = window.PointerEvent ? ["pointerdown"] : ["touchstart", "mousedown"];
+  gestureOn.forEach(function (type) {
+    document.addEventListener(type, unlockMusic, { capture: true, once: true, passive: true });
+  });
+
+  /* 万一这次 play() 被系统挡掉（省电模式、来电打断、策略抽风），
+     下一次点屏幕就地续上——用户感觉到的只是「音乐晚了一拍」，而不是没有音乐。 */
+  var lastTry = 0;
+  function nudgeMusic() {
+    if (!unlocked || !music.paused || document.hidden) return;
+    if (Date.now() - lastTry < 1500) return;
+    tryPlay();
+  }
+  gestureOn.forEach(function (type) {
+    document.addEventListener(type, nudgeMusic, { capture: true, passive: true });
+  });
+
+  function clearWaiting() {
+    gateWaiting = false;
+    if (gateEl) gateEl.classList.remove("is-waiting", "is-loading");
+    if (gateLoad) gateLoad.hidden = true;
+  }
 
   function enterCard() {
     if (gateOpened) return;
     gateOpened = true;
-    gateWaiting = false;
-    gateEnter.classList.remove("is-waiting");
+    clearWaiting();
     advance("open");
     unlocked = true;
     tryPlay();
@@ -1007,19 +1070,21 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     if (gateEnter.blur) gateEnter.blur();
   }
 
-  /* 第一次点：素材没下完就等下完（`封面门` 兼职等待室）；再点一次直接强闯，
-     不会因为网络问题被永远锁在封面上。 */
+  /* 点「进入」：素材没下完就安心等下完，圆环外圈有细进度环和百分比；
+     等待期间的点击不再「强闯」，省得又回到边滑边下、图片一张张往外蹦的卡顿。 */
   function openCard() {
     if (state() !== "cover" || gateOpened) return;
     if (Preload.ready()) { enterCard(); return; }
+    if (gateWaiting) return;
     gateWaiting = true;
-    gateEnter.classList.add("is-waiting");
+    if (gateEl) gateEl.classList.add("is-waiting", "is-loading");
+    if (gateLoad) gateLoad.hidden = false;
+    Preload.paint();   /* 先把当前进度写出来，别等下一份素材落地才有数字 */
     Preload.whenReady(enterCard);
   }
 
   gateEnter.addEventListener("click", function () {
     unlockMusic();
-    if (gateWaiting && !gateOpened) { enterCard(); return; }
     openCard();
   });
 
