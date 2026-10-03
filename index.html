@@ -209,6 +209,25 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   html[data-candles="out"] .smoke{animation:none}
   .has-js .wall .shot,.has-js .wall.is-open .shot{opacity:1;animation:none}
 }
+  /* ===== 角色应援带（12 号票：第五人格元素）===== */
+.band--idv{display:block;overflow:visible}
+.idv{display:flex;align-items:flex-end;gap:clamp(10px,3vw,16px);
+  padding:clamp(12px,4vw,20px) var(--pad) clamp(20px,6vw,30px);
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.idv::-webkit-scrollbar{display:none}
+.idv__label{margin:0 0 clamp(12px,4vw,18px);padding:0 var(--pad)}
+.idv__card{margin:0;flex:0 0 auto;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+.idv__card img{display:block;width:auto;height:clamp(176px,44vh,300px);border-radius:9px;
+  background:#17171d;box-shadow:0 18px 40px rgba(0,0,0,.55)}
+.idv__card:nth-child(2n) img{height:clamp(196px,50vh,336px)}
+.idv__card:nth-child(3n) img{height:clamp(160px,40vh,268px)}
+.idv__card:nth-child(3n){--tilt:-1.8deg;--dy:clamp(6px,2vw,12px)}
+.idv__card:nth-child(3n+1){--tilt:1.4deg}
+.idv__card:nth-child(2n){--dy:clamp(10px,3vw,18px)}
+/* 等素材下完的封面门：只把呼吸放慢，不出现进度条 */
+.gate.is-waiting .cue{border-color:rgba(204,255,51,.42)}
+.gate.is-waiting .cue::after{animation:pulse 2.6s ease-out infinite}
 </style>
 <script>document.documentElement.className += " has-js";</script>
 </head>
@@ -259,6 +278,22 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   <!-- 正文二（03 号票接管分位出现） -->
   <section class="sec">
     <p class="body__text reveal">保持抽象精神状态，<br>好事持续疯狂砸来。</p>
+  </section>
+
+  <!-- 角色应援（12 号票：第五人格元素，图由出品人提供，压到 560px/张） -->
+  <section class="band band--idv" aria-label="角色应援">
+    <p class="kicker idv__label reveal">Identity V</p>
+    <div class="idv" id="idv-band">
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/01.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/02.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/03.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/04.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/05.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="703" data-src="角色/06.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="747" data-src="角色/07.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="788" data-src="角色/08.jpg"></figure>
+      <figure class="idv__card"><img alt="" width="560" height="1085" data-src="角色/09.jpg"></figure>
+    </div>
   </section>
 
   <!-- 蛋糕与蜡烛（05 号票：点一下或按住吹灭、data-candles） -->
@@ -697,6 +732,65 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
     return { start: start, finish: finish };
   })();
 
+  /* ---------- 先下载再观看（12 号票）：素材在 `封面门` 背后一次下完 ----------
+     全站不到 3.5 MB，一次下完换滑动不卡。`data-preload` 是可驱动的缝：
+     loading（在下）/ ready（齐了）。原来「照片滑到附近才请求」是 13 号用户故事
+     的取舍，出品人这次明确要先下完再进；懒加载退化成兜底——预载已写好 src。 */
+  var Preload = (function () {
+    var music = document.getElementById("music");
+    var settled = 0;
+    var total = 0;
+    var done = false;
+    var waiters = [];
+
+    function finish() {
+      if (done) return;
+      done = true;
+      root.setAttribute("data-preload", "ready");
+      var list = waiters; waiters = [];
+      for (var i = 0; i < list.length; i++) list[i]();
+    }
+
+    function step() {
+      settled += 1;
+      if (settled >= total) finish();
+    }
+
+    function pull(img) {
+      var src = img.getAttribute("data-src");
+      if (!src) return;
+      var pre = new Image();
+      pre.onload = function () {
+        img.removeAttribute("data-src");
+        img.setAttribute("src", src);
+        if (pre.decode) pre.decode().then(step, step); else step();
+      };
+      pre.onerror = function () {
+        img.removeAttribute("data-src");
+        step();
+      };
+      pre.src = src;
+    }
+
+    var imgs = [].slice.call(document.querySelectorAll("img[data-src]"));
+    total = imgs.length + 1;   /* + 背景音乐 */
+    root.setAttribute("data-preload", "loading");
+    imgs.forEach(pull);
+
+    var audioSettled = false;
+    function audioStep() { if (!audioSettled) { audioSettled = true; step(); } }
+    if (music && music.readyState < 3) {
+      music.addEventListener("canplaythrough", audioStep);
+      music.addEventListener("error", audioStep);
+      setTimeout(audioStep, 4000);   /* 音频慢或格式不支持时不拖住整张卡 */
+    } else { audioStep(); }
+    setTimeout(finish, 15000);       /* 兜底：任何一张图卡住也不把人锁在封面 */
+
+    function whenReady(fn) { if (done) fn(); else waiters.push(fn); }
+
+    return { ready: function () { return done; }, whenReady: whenReady };
+  })();
+
   /* ---------- 音乐控制（07 号票）：一次手势解锁 + 常驻静音开关 ----------
      静音走 audio.muted，而不是 pause()：轨道照常在后台走，取消静音时就地接着播，
      既不会从头重来，也不会在滑动或切走时被中断。外部可见的只有 data-music：
@@ -745,8 +839,14 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
 
   syncMusic();
 
-  function openCard() {
-    if (state() !== "cover") return;
+  var gateOpened = false;
+  var gateWaiting = false;
+
+  function enterCard() {
+    if (gateOpened) return;
+    gateOpened = true;
+    gateWaiting = false;
+    gateEnter.classList.remove("is-waiting");
     advance("open");
     unlocked = true;
     tryPlay();
@@ -757,7 +857,21 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
     armReveal();
     if (gateEnter.blur) gateEnter.blur();
   }
-  gateEnter.addEventListener("click", openCard);
+
+  /* 第一次点：素材没下完就等下完（`封面门` 兼职等待室）；再点一次直接强闯，
+     不会因为网络问题被永远锁在封面上。 */
+  function openCard() {
+    if (state() !== "cover" || gateOpened) return;
+    if (Preload.ready()) { enterCard(); return; }
+    gateWaiting = true;
+    gateEnter.classList.add("is-waiting");
+    Preload.whenReady(enterCard);
+  }
+
+  gateEnter.addEventListener("click", function () {
+    if (gateWaiting && !gateOpened) { enterCard(); return; }
+    openCard();
+  });
 
   /* ---------- 滚到附近才揭示（减弱动态效果下由 CSS 直接显示）----------
      `封面门` 打开前一概不观察：否则首屏里的正文一会在封面背后就把出场动效耗掉，
