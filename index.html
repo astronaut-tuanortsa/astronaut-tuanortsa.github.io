@@ -819,8 +819,8 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   function tryPlay() {
     if (!unlocked || !music.paused) { syncMusic(); return; }
     var played = music.play();
+    syncMusic();   /* play() 已同步把 paused 置 false，先报对状态，别让封面闪一下没在放 */
     if (played && typeof played.then === "function") played.then(syncMusic, syncMusic);
-    else syncMusic();
   }
 
   musicToggle.addEventListener("click", function () {
@@ -841,6 +841,15 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
 
   var gateOpened = false;
   var gateWaiting = false;
+
+  /* 解锁必须发生在点击手势里：预载把「开门」推迟成了异步回调，
+     那时再 play() 手机浏览器会按自动播放策略直接拒播（音乐凭空消失）。
+     所以点下 `封面门` 的这一刻就先放起来，异步开门时只是接着播。 */
+  function unlockMusic() {
+    if (unlocked) return;
+    unlocked = true;
+    tryPlay();
+  }
 
   function enterCard() {
     if (gateOpened) return;
@@ -869,6 +878,7 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   }
 
   gateEnter.addEventListener("click", function () {
+    unlockMusic();
     if (gateWaiting && !gateOpened) { enterCard(); return; }
     openCard();
   });
