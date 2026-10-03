@@ -40,6 +40,24 @@ img{display:block;max-width:100%}
 /* ===== 礼花画布 ===== */
 #confetti{position:fixed;inset:0;width:100%;height:100%;z-index:50;pointer-events:none}
 
+/* ===== 顶部进度条（17 号票）=====
+   一条 2px 的光带，scaleX 由脚本写成 0-1；封面门还开着时整条藏起来。 */
+.progress{position:fixed;left:0;top:0;width:100%;height:2px;z-index:55;pointer-events:none;
+  background:rgba(246,246,247,.07);transition:opacity .5s var(--ease)}
+.progress i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:0 50%;
+  background:linear-gradient(90deg,var(--acid),var(--sky) 52%,var(--hot));
+  box-shadow:0 0 14px rgba(204,255,51,.45)}
+html[data-card-state="cover"] .progress{opacity:0}
+
+/* ===== 指针光斑（17 号票）=====
+   只给有精确指针的设备：一小片跟着鼠标走的柔光，用 transform 挪动，不触发重绘。 */
+.spotlight{position:fixed;left:0;top:0;width:460px;height:460px;margin:-230px 0 0 -230px;
+  z-index:-1;pointer-events:none;opacity:0;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.07),rgba(255,255,255,0) 100%);
+  transition:opacity .8s var(--ease)}
+@media (hover:hover) and (pointer:fine){.has-js .spotlight{opacity:1;will-change:transform}}
+html:not(.has-js) .spotlight{display:none}
+
 /* ===== 常驻静音开关（07 号票）=====
    固定在右上角、任何状态下都在；关掉的是声音不是播放本身。 */
 .music-toggle{
@@ -64,6 +82,11 @@ img{display:block;max-width:100%}
 .music-toggle[aria-pressed="true"]{color:var(--dim);border-color:rgba(246,246,247,.14)}
 .music-toggle[aria-pressed="true"] .music-toggle__wave{opacity:0}
 .music-toggle[aria-pressed="true"] .music-toggle__slash{opacity:1}
+/* 音乐在放的时候，开关本身跟着呼吸；静音或还没解锁时不闪。 */
+html[data-music="playing"] .music-toggle{border-color:rgba(204,255,51,.5);animation:music-pulse 2.6s ease-out infinite}
+@keyframes music-pulse{
+  0%{box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 0 rgba(204,255,51,.24)}
+  70%,100%{box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 13px rgba(204,255,51,0)}}
 html:not(.has-js) .music-toggle{display:none}
 
 /* ===== 封面门 ===== */
@@ -139,9 +162,12 @@ html:not([data-card-state="cover"]) .gate{opacity:0;transform:translateY(-12%) s
   overscroll-behavior-x:contain;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
+  scroll-snap-type:x proximity;
+  -webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,0) 0,#000 2.5%,#000 97.5%,rgba(0,0,0,0) 100%);
+  mask-image:linear-gradient(90deg,rgba(0,0,0,0) 0,#000 2.5%,#000 97.5%,rgba(0,0,0,0) 100%);
 }
 .strip::-webkit-scrollbar{display:none}
-.shot{margin:0;flex:0 0 auto;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+.shot{margin:0;flex:0 0 auto;scroll-snap-align:center;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
 .shot img{border-radius:10px;background:#15151b;border:1px solid rgba(246,246,247,.1);
   box-shadow:0 14px 30px rgba(0,0,0,.5),0 34px 64px rgba(0,0,0,.32)}
 .strip .shot img{height:clamp(168px,42vw,282px);width:auto}
@@ -152,46 +178,126 @@ html:not([data-card-state="cover"]) .gate{opacity:0;transform:translateY(-12%) s
 .strip .shot:nth-child(2n){--dy:clamp(8px,2.4vw,14px)}
 .strip .shot:nth-child(5n){--dy:clamp(14px,4.2vw,22px)}
 
-/* ===== 蛋糕与蜡烛（05 号票：点一下或按住吹灭）=====
-   整把蜡烛本身就是一个按钮，不靠说明文字：火焰在动、按住会矮下去、熄灭后冒烟。 */
-.cake{display:flex;flex-direction:column;align-items:center;padding:0 var(--pad)}
+/* ===== 蛋糕与蜡烛（05 号票：点一下或按住吹灭；17 号票升级质感）=====
+   两层蛋糕 + 淋面 + 糖粒，三根蜡烛共用一团暖光。按住时 `--blow` 从 0 涨到 1，
+   火苗跟着歪、蜡烛跟着矮、暖光跟着收——「正在吹」的进度就是这一下。 */
+.cake{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 var(--pad)}
 .cake__candles{
-  display:flex;align-items:flex-end;gap:clamp(18px,7vw,30px);
-  margin:0;padding:12px 8px 4px;
+  --blow:0;
+  position:relative;z-index:2;
+  display:flex;align-items:flex-end;gap:clamp(20px,7.5vw,34px);
+  margin:0;padding:12px 8px 10px;
   background:none;border:0;cursor:pointer;
   -webkit-tap-highlight-color:transparent;touch-action:none;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
 }
 .cake__candles:focus-visible{outline:2px solid var(--acid);outline-offset:8px;border-radius:14px}
 .candle{
-  position:relative;display:block;width:9px;height:clamp(40px,11vw,56px);border-radius:3px;
-  background:linear-gradient(#fff3c4,#ffb020);
+  position:relative;display:block;width:10px;height:clamp(42px,11vw,58px);border-radius:5px;
+  background:
+    repeating-linear-gradient(112deg,rgba(255,255,255,0) 0 6px,rgba(255,255,255,.42) 6px 10px),
+    linear-gradient(180deg,#fff6d8,#ffcb4d 62%,#eda01d);
+  box-shadow:inset -2px 0 3px rgba(120,64,0,.22),inset 2px 0 3px rgba(255,255,255,.5),0 8px 16px rgba(0,0,0,.35);
   transform-origin:50% 100%;
-  transition:transform .42s ease,opacity .42s ease;
+  transition:transform .42s var(--ease),opacity .42s var(--ease);
 }
+/* 烛芯，和一小滴凝在烛身上的蜡。 */
+.candle::after{content:"";position:absolute;left:50%;top:-7px;width:2px;height:8px;margin-left:-1px;border-radius:2px;
+  background:linear-gradient(180deg,#4a3320,#170f06)}
+.candle::before{content:"";position:absolute;left:1px;top:5px;width:4px;height:13px;border-radius:0 0 5px 5px;
+  background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,240,200,.25))}
+/* 火苗分三层：外圈光晕、火身（左右摇）、内芯（梯度自带）。 */
+.halo{position:absolute;left:50%;top:-30px;width:64px;height:64px;margin-left:-32px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,186,74,.5),rgba(255,140,30,.16) 52%,rgba(255,120,0,0) 78%);
+  animation:halo 2.8s ease-in-out infinite;transition:opacity .5s ease,transform .5s ease}
+@keyframes halo{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.09)}}
 .flame{
-  position:absolute;left:50%;top:-18px;width:13px;height:21px;margin-left:-6.5px;
-  border-radius:50% 50% 46% 46%;
-  background:radial-gradient(circle at 50% 72%,#fff 0 20%,#ffd42e 32% 58%,rgba(255,92,0,.9) 74%,rgba(255,92,0,0) 80%);
-  animation:flicker 1.5s ease-in-out infinite alternate;
-  transition:opacity .3s ease,transform .3s ease;
+  position:absolute;left:50%;top:-23px;width:14px;height:24px;margin-left:-7px;
+  border-radius:52% 52% 44% 44%;
+  background:
+    radial-gradient(46% 46% at 50% 70%,#fff 0 40%,rgba(255,255,255,0) 74%),
+    radial-gradient(52% 66% at 50% 76%,#ffe89a 0 26%,#ffc21a 54%,rgba(255,110,0,.86) 78%,rgba(255,90,0,0) 88%);
+  transform-origin:50% 100%;
+  animation:flicker 1.4s ease-in-out infinite alternate;
+  transition:opacity .3s ease;
 }
-@keyframes flicker{from{transform:scale(1);opacity:.94}to{transform:scale(1.07,.95) translateY(-1px);opacity:1}}
-/* 按住时先矮下去：这点进度感就是「正在吹」的反馈。 */
-.cake__candles.is-blowing .candle{transform:scale(.9,.93);opacity:.82}
-/* 一缕白烟代替文字，说明火已经灭了。 */
-.smoke{
-  position:absolute;left:50%;top:-15px;width:9px;height:9px;margin-left:-4.5px;
-  border-radius:50%;background:rgba(240,240,245,.75);filter:blur(3px);opacity:0;pointer-events:none;
-}
-html[data-candles="out"] .flame{animation:none;opacity:0;transform:scale(.2,.45) translateY(-5px)}
+@keyframes flicker{
+  from{transform:rotate(var(--lean,0deg)) translateX(calc(var(--blow,0) * -1px)) scale(calc(1 - var(--blow,0) * .2));opacity:.94}
+  to{transform:rotate(calc(var(--lean,0deg) + 2.6deg)) translateX(calc(var(--blow,0) * -1px)) scale(calc(1.06 - var(--blow,0) * .2),calc(.94 - var(--blow,0) * .22));opacity:1}}
+/* 鼠标扫过烛台：火苗先歪一下，等于提前给一点「会被吹动」的暗示。 */
+html[data-candles="lit"] .cake__candles:hover .flame{--lean:-7deg}
+/* 按住：整根蜡烛跟着 `--blow` 矮下去、暗下去。 */
+.cake__candles.is-blowing .candle{transform:scale(calc(1 - var(--blow) * .13),calc(1 - var(--blow) * .08));opacity:calc(1 - var(--blow) * .18)}
+/* 一缕白烟代替文字，说明火已经灭了；两条错开，像真的在飘。 */
+.smoke{position:absolute;left:50%;top:-18px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;
+  background:rgba(240,240,245,.72);filter:blur(3px);opacity:0;pointer-events:none}
+.smoke::after{content:"";position:absolute;left:5px;top:4px;width:7px;height:7px;border-radius:50%;
+  background:rgba(240,240,245,.6);filter:blur(3px)}
+html[data-candles="out"] .flame{animation:none;opacity:0;transform:translateY(-6px) scale(.25,.4)}
+html[data-candles="out"] .halo{opacity:0;transform:scale(.6)}
 html[data-candles="out"] .cake__candles{cursor:default}
-html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
-@keyframes smoke{0%{opacity:0;transform:translateY(0) scale(.5)}25%{opacity:.8}100%{opacity:0;transform:translateY(-30px) scale(2.6)}}
-.cake__top{width:clamp(150px,50vw,236px);height:clamp(46px,13vw,68px);border-radius:12px 12px 8px 8px;
-  background:linear-gradient(180deg,#ffc4dc,#ff5ba0 44%,#dd1a70);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 26px 60px rgba(255,46,136,.24)}
-.cake__plate{width:clamp(184px,60vw,286px);height:9px;border-radius:50%;margin-top:-4px;
+html[data-candles="out"] .candle{transform:rotate(-3deg) translateY(1px)}
+html[data-candles="out"] .smoke{animation:smoke 1.9s ease-out .1s both}
+html[data-candles="out"] .smoke::after{animation:smoke 1.9s ease-out .5s both}
+@keyframes smoke{
+  0%{opacity:0;transform:translate(0,0) scale(.4)}
+  18%{opacity:.75}
+  60%{opacity:.34}
+  100%{opacity:0;transform:translate(-9px,-46px) scale(2.5)}}
+/* 熄灭后余烬上飘：六个小点错开飞出，只演一次。 */
+.cake__embers{position:absolute;left:50%;top:0;width:0;height:0;z-index:3;pointer-events:none}
+.ember{position:absolute;left:var(--x,0px);top:0;width:3px;height:3px;border-radius:50%;opacity:0;
+  background:#ffd07a;box-shadow:0 0 7px rgba(255,180,80,.95)}
+html[data-candles="out"] .ember{animation:ember 1.15s ease-out calc(var(--i,0) * 85ms) both}
+@keyframes ember{
+  0%{opacity:0;transform:translate(0,0) scale(.5)}
+  14%{opacity:1}
+  100%{opacity:0;transform:translate(var(--dx,0px),var(--dy,-46px)) scale(.25)}}
+/* 蛋糕本体：上层奶油 + 淋面 + 糖粒，下层胚体 + 缎带，底下金属盘。 */
+.cake__glow{position:absolute;left:50%;top:6px;width:min(84vw,360px);height:200px;
+  margin-left:calc(min(84vw,360px) / -2);border-radius:50%;z-index:0;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,190,92,.4),rgba(255,120,40,.14) 52%,rgba(255,92,0,0) 76%);
+  filter:blur(4px);animation:cake-light 2.4s ease-in-out infinite alternate;transition:opacity .9s ease}
+@keyframes cake-light{from{opacity:.78;transform:scale(.97)}to{opacity:1;transform:scale(1.03)}}
+html[data-candles="out"] .cake__glow{animation:none;opacity:.1}
+.cake__flash{position:absolute;left:50%;top:10px;width:min(80vw,340px);height:150px;
+  margin-left:calc(min(80vw,340px) / -2);border-radius:50%;z-index:1;pointer-events:none;opacity:0;
+  background:radial-gradient(closest-side,rgba(255,226,170,.85),rgba(255,140,60,0) 72%)}
+html[data-candles="out"] .cake__flash{animation:flash .9s ease-out both}
+@keyframes flash{0%{opacity:0;transform:scale(.7)}12%{opacity:.75}100%{opacity:0;transform:scale(1.25)}}
+.cake__top{position:relative;z-index:1;width:clamp(158px,52vw,244px);height:clamp(48px,13.5vw,70px);
+  border-radius:14px 14px 6px 6px;margin-bottom:clamp(9px,2.6vw,13px);
+  background:linear-gradient(180deg,#fffdf7,#fdf1dd 58%,#f0dcc0);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.9),inset -12px 0 22px rgba(160,120,80,.12),
+    inset 12px 0 22px rgba(160,120,80,.1),0 22px 44px rgba(0,0,0,.42)}
+/* 淋面：一层奶油盖住上半，顶上撒糖粒，下面挂一排半圆。 */
+.cake__top::before{content:"";position:absolute;left:-2px;right:-2px;top:-6px;height:46%;border-radius:14px 14px 8px 8px;
+  background-image:
+    radial-gradient(circle,rgba(204,255,51,.95) 0 1.5px,rgba(204,255,51,0) 2px),
+    radial-gradient(circle,rgba(46,230,255,.95) 0 1.4px,rgba(46,230,255,0) 1.9px),
+    radial-gradient(circle,rgba(255,255,255,.9) 0 1.5px,rgba(255,255,255,0) 2px),
+    linear-gradient(180deg,#ffd3e4,#ff5ba0 62%,#e51a72);
+  background-size:26px 20px,34px 26px,41px 31px,100% 100%;
+  background-position:3px 6px,14px 12px,9px 4px,0 0;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 6px 14px rgba(221,26,112,.32)}
+.cake__top::after{content:"";position:absolute;left:-2px;right:-2px;bottom:-10px;height:16px;
+  background:
+    linear-gradient(#ff5ba0,#ff5ba0) 0 0/100% 5px no-repeat,
+    radial-gradient(circle at 9px 0,#ff5ba0 0 8.5px,rgba(255,91,160,0) 9px) 0 0/18px 16px repeat-x;
+  filter:drop-shadow(0 4px 5px rgba(160,20,80,.35))}
+.cake__base{position:relative;width:clamp(196px,66vw,300px);height:clamp(40px,11vw,58px);
+  border-radius:10px 10px 8px 8px;
+  background:linear-gradient(180deg,#fff8ea,#f3e3c9 54%,#d9c3a2);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.85),inset -14px 0 26px rgba(160,120,80,.14),
+    inset 14px 0 26px rgba(160,120,80,.1),0 20px 40px rgba(0,0,0,.4)}
+.cake__base::after{content:"";position:absolute;left:0;right:0;top:34%;height:16%;border-radius:3px;
+  background:linear-gradient(180deg,#ff6ba8,#e01c72);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 0 18px rgba(255,46,136,.35)}
+.cake__plate{position:relative;width:clamp(214px,72vw,320px);height:13px;border-radius:50%;margin-top:-6px;
+  background:linear-gradient(180deg,#5c5c69,#2a2a33 52%,#141419);
+  box-shadow:0 16px 34px rgba(0,0,0,.62),inset 0 1px 0 rgba(255,255,255,.32)}
+.cake__plate::after{content:"";position:absolute;left:14%;right:14%;top:1px;height:3px;border-radius:50%;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.5),rgba(255,255,255,0))}
   background:linear-gradient(180deg,#2b2b35,#191921);box-shadow:0 8px 20px rgba(0,0,0,.5)}
 
 /* ===== 照片墙（06 号票：结尾一次铺开的不规则拼贴）=====
@@ -219,21 +325,78 @@ html[data-candles="out"] .smoke{animation:smoke 1.7s ease-out .1s both}
   to{opacity:1;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
 }
 
+/* ===== 照片的触碰反馈（17 号票）=====
+   有指针的设备 hover 才放大；触屏按下时缩一下，是即时的回应。 */
+.shot{cursor:zoom-in;-webkit-tap-highlight-color:transparent}
+.shot:focus-visible{outline:2px solid var(--acid);outline-offset:6px;border-radius:12px}
+.shot img{transition:transform .45s var(--ease),box-shadow .45s var(--ease),filter .45s var(--ease)}
+.shot:active img{transform:scale(.985)}
+@media (hover:hover) and (pointer:fine){
+  .shot:hover img{transform:scale(1.035);filter:saturate(1.05) brightness(1.04);
+    box-shadow:0 20px 40px rgba(0,0,0,.55),0 0 0 1px rgba(204,255,51,.4),0 44px 80px rgba(0,0,0,.45)}
+}
+
+/* ===== 照片灯箱（17 号票）=====
+   盖住整页看大图：背景压暗加模糊，照片自己带一层描边；
+   翻页与关闭都是真按钮，键盘和读屏都能走通。 */
+html[data-lightbox="open"]{overflow:hidden}
+.lightbox{position:fixed;inset:0;z-index:90;
+  display:flex;align-items:center;justify-content:center;
+  padding:calc(52px + env(safe-area-inset-top)) clamp(14px,5vw,48px) calc(62px + env(safe-area-inset-bottom));
+  background:radial-gradient(120% 90% at 50% 40%,rgba(10,10,13,.84),rgba(4,4,7,.97));
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  opacity:0;transition:opacity .32s var(--ease)}
+.lightbox[hidden]{display:none}
+.lightbox.is-open{opacity:1}
+.lightbox__stage{margin:0;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;
+  transform:scale(.94);transition:transform .36s var(--ease)}
+.lightbox.is-open .lightbox__stage{transform:none}
+.lightbox__img{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:12px;
+  border:1px solid rgba(246,246,247,.16);box-shadow:0 40px 90px rgba(0,0,0,.7)}
+.lightbox__close,.lightbox__nav{position:absolute;display:flex;align-items:center;justify-content:center;
+  width:44px;height:44px;padding:0;border:1px solid rgba(246,246,247,.2);border-radius:50%;
+  background:rgba(12,12,16,.62);color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  transition:color .2s var(--ease),border-color .2s var(--ease)}
+.lightbox__close:hover,.lightbox__nav:hover{border-color:rgba(204,255,51,.65);color:var(--acid)}
+.lightbox__close:focus-visible,.lightbox__nav:focus-visible{outline:2px solid var(--acid);outline-offset:3px}
+.lightbox__close{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));font-size:17px;line-height:1}
+.lightbox__nav{top:50%;margin-top:-22px}
+.lightbox__nav--prev{left:calc(6px + env(safe-area-inset-left))}
+.lightbox__nav--next{right:calc(6px + env(safe-area-inset-right))}
+.lightbox__nav span{font-size:26px;line-height:1;margin-top:-3px}
+.lightbox__count{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));margin:0;
+  text-align:center;font-size:12px;letter-spacing:.22em;color:var(--dim);font-variant-numeric:tabular-nums}
+
 #end-sentinel{height:1px}
 
 /* ===== 滚动揭示与动效收敛 ===== */
 .has-js .reveal{opacity:0;transform:translateY(28px);transition:opacity .85s var(--ease),transform .85s var(--ease)}
 .has-js .reveal.is-in{opacity:1;transform:none}
+/* 标题下那条线跟着一起长出来，而不是先摆好再整块淡入（17 号票）。 */
+.has-js .ending__line.reveal::before{transform:scaleX(0);transform-origin:0 50%;transition:transform 1s var(--ease) .2s}
+.has-js .ending__line.reveal.is-in::before{transform:scaleX(1)}
+.has-js .body__text.reveal::before{transform:scaleX(0);transform-origin:0 50%;transition:transform .9s var(--ease) .22s}
+.has-js .body__text.reveal.is-in::before{transform:scaleX(1)}
 @media (prefers-reduced-motion:reduce){
   .gate{transition:none}
   .has-js .reveal{opacity:1;transform:none;transition:none}
-  .flame,.cue::after,.opening__caret{animation:none}
+  .flame,.halo,.cue::after,.opening__caret,.music-toggle,.cake__glow,.cake__flash,.ember{animation:none}
   .opening__caret{display:none}
   .candle,.flame{transition:none}
   .cake__candles.is-blowing .candle{transform:none}
+  .cake__candles:hover .flame{--lean:0deg}
+  html[data-candles="out"] .candle{transform:none}
+  html[data-candles="out"] .ember{opacity:0}
   html[data-candles="out"] .smoke{animation:none}
   .has-js .wall .shot,.has-js .wall.is-open .shot{opacity:1;animation:none}
-  .deco--float{animation:none}
+  /* 装饰全部回到摆好的位置：不跟滚动、不跟指针。 */
+  .deco--float{animation:none;transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
+  .deco--tilt{transform:rotate(var(--tilt,0deg))}
+  .spotlight{display:none}
+  .shot img{transition:none}
+  .lightbox,.lightbox__stage{transition:none}
+  .ending__line.reveal::before,.body__text.reveal::before{transform:none;transition:none}
 }
   /* ===== 画面装饰层（13 号票：第五人格只做装饰，人像已抠图；16 号票：场景图当背景）=====
      最底层是第五人格场景图（fixed + cover，上面用统一暗度与暗角压住），
@@ -264,15 +427,15 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 .deco img{display:block;width:100%;height:auto;
   filter:drop-shadow(0 16px 26px rgba(0,0,0,.6))}
 .deco--ghost img{opacity:.13;filter:drop-shadow(0 22px 42px rgba(0,0,0,.5))}
-.deco--tilt{transform:rotate(var(--tilt,0deg))}
+.deco--tilt{transform:translate3d(var(--px,0px),var(--py,0px),0) rotate(var(--tilt,0deg))}
 .deco--float{animation:drift 8s ease-in-out infinite}
 .blob{position:absolute;z-index:-1;pointer-events:none;border-radius:50%;filter:blur(40px)}
 .spark{position:absolute;z-index:-1;pointer-events:none;font-weight:900;line-height:1;
   color:var(--acid);text-shadow:0 0 14px rgba(204,255,51,.55)}
 
 @keyframes drift{
-  0%,100%{transform:translateY(var(--dy,0px)) rotate(var(--tilt,0deg))}
-  50%{transform:translateY(calc(var(--dy,0px) - 9px)) rotate(calc(var(--tilt,0deg) + 1.2deg))}}
+  0%,100%{transform:translate3d(var(--px,0px),calc(var(--dy,0px) + var(--py,0px)),0) rotate(var(--tilt,0deg))}
+  50%{transform:translate3d(var(--px,0px),calc(var(--dy,0px) + var(--py,0px) - 9px),0) rotate(calc(var(--tilt,0deg) + 1.2deg))}}
 
 /* 装饰摆位：-ghost 低透明衬在文字后面，-sticker 小图带胶带贴边，其余是探头 */
 .deco--stickered::after{content:"";position:absolute;top:-8%;left:50%;width:62%;height:14px;
@@ -310,6 +473,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 <body>
 
 <canvas id="confetti" aria-hidden="true"></canvas>
+<div class="progress" id="progress" aria-hidden="true"><i id="progress-bar"></i></div>
+<div class="spotlight" id="spotlight" aria-hidden="true"></div>
 
 <!-- 常驻静音开关（07 号票）：固定在右上角，任何状态下都能点。 -->
 <button type="button" id="music-toggle" class="music-toggle" aria-pressed="false" aria-label="静音背景音乐">
@@ -399,14 +564,26 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       <figure class="deco deco--float deco--tilt deco__cake-right" aria-hidden="true" style="--tilt:8deg">
         <img src="角色/cutout/03.webp" alt="" loading="lazy" decoding="async">
       </figure>
+      <span class="cake__glow" aria-hidden="true"></span>
+      <span class="cake__flash" aria-hidden="true"></span>
       <button type="button" class="cake__candles" id="candles">
         <span class="sr-only">吹灭蜡烛</span>
-        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
-        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
-        <span class="candle" aria-hidden="true"><i class="flame"></i><i class="smoke"></i></span>
+        <span class="candle" aria-hidden="true"><i class="halo"></i><i class="flame"></i><i class="smoke"></i></span>
+        <span class="candle" aria-hidden="true"><i class="halo"></i><i class="flame"></i><i class="smoke"></i></span>
+        <span class="candle" aria-hidden="true"><i class="halo"></i><i class="flame"></i><i class="smoke"></i></span>
       </button>
-      <div class="cake__top"></div>
-      <div class="cake__plate"></div>
+      <!-- 熄灭后从烛芯飘起来的余烬：纯 CSS，只演一次（17 号票）。 -->
+      <span class="cake__embers" aria-hidden="true">
+        <i class="ember" style="top:8px;--x:-46px;--dx:-14px;--dy:-50px;--i:0"></i>
+        <i class="ember" style="top:6px;--x:-27px;--dx:-6px;--dy:-58px;--i:1"></i>
+        <i class="ember" style="top:11px;--x:-7px;--dx:4px;--dy:-46px;--i:2"></i>
+        <i class="ember" style="top:7px;--x:14px;--dx:9px;--dy:-60px;--i:3"></i>
+        <i class="ember" style="top:12px;--x:33px;--dx:16px;--dy:-52px;--i:4"></i>
+        <i class="ember" style="top:9px;--x:50px;--dx:12px;--dy:-44px;--i:5"></i>
+      </span>
+      <div class="cake__top" aria-hidden="true"></div>
+      <div class="cake__base" aria-hidden="true"></div>
+      <div class="cake__plate" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -429,6 +606,19 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
 </main>
 
 <div id="end-sentinel" aria-hidden="true"></div>
+
+<!-- ===== 照片灯箱（17 号票）=====
+     点照片带 / 照片墙里任意一张放大看；方向键或左右滑动翻页，Esc 或点空白处关掉。
+     和页面其它部分一样：不发请求、不上传，只把已经下好的照片换个大尺寸再画一遍。 -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="照片预览" hidden>
+  <figure class="lightbox__stage">
+    <img class="lightbox__img" id="lightbox-img" alt="" decoding="async">
+  </figure>
+  <button type="button" class="lightbox__nav lightbox__nav--prev" id="lightbox-prev" aria-label="上一张"><span aria-hidden="true">&#8249;</span></button>
+  <button type="button" class="lightbox__nav lightbox__nav--next" id="lightbox-next" aria-label="下一张"><span aria-hidden="true">&#8250;</span></button>
+  <button type="button" class="lightbox__close" id="lightbox-close" aria-label="关闭预览">&#10005;</button>
+  <p class="lightbox__count" id="lightbox-count" aria-live="polite"></p>
+</div>
 
 <!-- 音乐源直接使用出品人提供的 MP4，不做转码（spec「音乐与手势解锁」）。 -->
 <audio id="music" src="音乐/8a5fbf3154dc3b6aac9a752b244e768a.mp4" loop preload="auto" playsinline></audio>
@@ -476,9 +666,15 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     var armed = false;
     var pending = [];
 
-    function figure(photo) {
+    function figure(photo, index) {
       var fig = document.createElement("figure");
       fig.className = "shot";
+      /* 点开看大图（17 号票）：每张照片是个可聚焦的按钮；
+         真正的开关在 Lightbox 模块里，这里只把「我是第几张」挂上去。 */
+      fig.setAttribute("data-photo", String(index));
+      fig.setAttribute("role", "button");
+      fig.tabIndex = 0;
+      fig.setAttribute("aria-label", "放大查看第 " + (index + 1) + " 张照片");
       var img = document.createElement("img");
       img.alt = "";
       img.width = photo.w;
@@ -495,9 +691,9 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     function render() {
       var strip = document.getElementById("photo-strip");
       var wall = document.getElementById("photo-wall");
-      PHOTOS.forEach(function (photo) {
+      PHOTOS.forEach(function (photo, index) {
         var target = photo.group === "wall" ? wall : strip;
-        if (target) target.appendChild(figure(photo));
+        if (target) target.appendChild(figure(photo, index));
       });
       pending = [].slice.call(document.querySelectorAll(".shot img[data-src]"));
     }
@@ -576,16 +772,22 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     return { open: open };
   })();
 
-  /* ---------- 礼花：canvas 粒子，三道护栏 ---------- */
+  /* ---------- 礼花：canvas 粒子，三道护栏（06 号票；17 号票升级形态与物理）----------
+     五种粒子各管一段情绪：纸屑铺量、丝带拉长轨迹、星负责亮、火花负责热、冲击环给一拍。
+     护栏照旧：粒子总数上限；减弱动态效果下不发粒子；低端设备自动降量。 */
   var Confetti = (function () {
     var canvas = document.getElementById("confetti");
     var ctx = canvas.getContext("2d");
     var reduceQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-    var COLORS = ["#ccff33", "#ff2e88", "#2ee6ff", "#ffffff", "#ffd42e"];
+    var COLORS = ["#ccff33", "#ff2e88", "#2ee6ff", "#ffd42e", "#ffffff", "#b07bff"];
+    var EMBER_COLORS = ["#fff6d0", "#ffd42e", "#ccff33", "#ffffff"];
+    var RING_COLORS = ["#ccff33", "#2ee6ff", "#ffffff"];
     var parts = [];
+    var timers = [];
     var raf = 0;
     var w = 0;
     var h = 0;
+    var wind = 0;
 
     function isReduced() { return !!(reduceQuery && reduceQuery.matches); }
 
@@ -594,7 +796,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       if (isReduced()) return 0;
       var cores = navigator.hardwareConcurrency || 8;
       var mem = navigator.deviceMemory || 8;
-      return (cores <= 4 || mem <= 4) ? 110 : 240;
+      return (cores <= 4 || mem <= 4) ? 130 : 280;
     }
 
     function resize() {
@@ -606,56 +808,256 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function burst(x, y, count) {
-      var limit = cap();
-      if (!limit) return;
-      var room = limit - parts.length;
-      if (room <= 0) return;
-      count = Math.min(count, room);
-      for (var i = 0; i < count; i++) {
-        var angle = Math.random() * Math.PI * 2;
-        var speed = 2.2 + Math.random() * 7;
-        parts.push({
-          x: x, y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - (2 + Math.random() * 3),
-          w: 5 + Math.random() * 7,
-          h: 8 + Math.random() * 12,
-          rot: Math.random() * Math.PI,
-          vr: (Math.random() - 0.5) * 0.36,
-          life: 1,
-          decay: 0.008 + Math.random() * 0.009,
-          color: COLORS[(Math.random() * COLORS.length) | 0]
-        });
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function pick(list) { return list[(Math.random() * list.length) | 0]; }
+
+    /* 出膛方向：rise 是从下往上打（地喷礼花），否则四面开花。 */
+    function aim(rise, minS, maxS, power) {
+      var a, s;
+      if (rise) {
+        a = -Math.PI / 2 + (Math.random() - 0.5) * 1.15;
+        s = rand(minS * 1.9, maxS * 2.3) * power;
+      } else {
+        a = Math.random() * Math.PI * 2;
+        s = rand(minS, maxS) * power;
       }
-      if (!raf) raf = requestAnimationFrame(frame);
+      return { vx: Math.cos(a) * s, vy: Math.sin(a) * s - (rise ? 0 : rand(1.6, 4.2) * power) };
     }
 
-    function frame() {
+    function push(p) { if (parts.length < cap()) parts.push(p); }
+
+    function paper(x, y, power, rise) {
+      var v = aim(rise, 2.2, 7.4, power);
+      push({
+        kind: "paper", x: x, y: y, vx: v.vx, vy: v.vy,
+        w: rand(5, 11), h: rand(8, 16),
+        rot: Math.random() * Math.PI, vr: rand(-0.34, 0.34),
+        g: 0.3, drag: 0.988, life: 1, decay: rand(0.0075, 0.016), color: pick(COLORS)
+      });
+    }
+
+    /* 丝带：一条会扭的曲线，比纸屑慢、比纸屑飘。 */
+    function ribbon(x, y, power, rise) {
+      var v = aim(rise, 2.6, 8.2, power);
+      push({
+        kind: "ribbon", x: x, y: y, vx: v.vx, vy: v.vy,
+        len: rand(16, 34), wide: rand(2.2, 4.2),
+        rot: Math.random() * Math.PI, vr: rand(-0.22, 0.22),
+        wave: rand(3, 9), curl: Math.random() * 6.2, curlSpeed: rand(4, 9),
+        g: 0.24, drag: 0.982, life: 1, decay: rand(0.006, 0.012), color: pick(COLORS)
+      });
+    }
+
+    function star(x, y, power, rise) {
+      var v = aim(rise, 1.8, 6.4, power);
+      push({
+        kind: "star", x: x, y: y, vx: v.vx, vy: v.vy,
+        r: rand(3.4, 6.6), rot: Math.random() * Math.PI, vr: rand(-0.2, 0.2),
+        twinkle: Math.random() * 6.2, twinkleSpeed: rand(6, 13),
+        g: 0.18, drag: 0.985, life: 1, decay: rand(0.006, 0.013), color: pick(COLORS)
+      });
+    }
+
+    /* 火花：加色混合画，带一条顺着速度的短尾巴；余烬和炸点都用它。 */
+    function spark(x, y, power, rise) {
+      var v = aim(rise, 1.4, 6, power);
+      push({
+        kind: "spark", x: x, y: y, vx: v.vx, vy: rise ? rand(-4.4, -1.4) : v.vy,
+        r: rand(1, 2.4), g: rise ? 0.02 : 0.1, drag: 0.965,
+        life: 1, decay: rand(0.008, 0.02), color: pick(EMBER_COLORS)
+      });
+    }
+
+    /* 冲击环：一瞬间撑开的细圈，给每一次炸裂一个「拍点」。 */
+    function ring(x, y, power) {
+      push({
+        kind: "ring", x: x, y: y, vx: 0, vy: 0,
+        r: rand(3, 7), grow: rand(5.5, 8) * power,
+        rot: 0, vr: 0, g: 0, drag: 0.97,
+        life: 1, decay: 0.05, color: pick(RING_COLORS)
+      });
+    }
+
+    function kick() { if (!raf && !isReduced()) raf = requestAnimationFrame(frame); }
+
+    /* 一次礼花 = 主爆（纸屑 + 丝带）+ 130ms 后的二段爆（星 + 火花 + 环）。
+       两拍比单拍更像真的礼花，也让人看得清「这一下是从哪儿炸的」。 */
+    function burst(x, y, count, opts) {
+      var limit = cap();
+      if (!limit) return;
+      opts = opts || {};
+      var power = opts.power == null ? 1 : opts.power;
+      var rise = !!opts.rise;
+      var want = {
+        ribbon: Math.min(24, Math.round(count * 0.2)),
+        star: Math.round(count * 0.14),
+        spark: Math.round(count * 0.16),
+        ring: count >= 120 ? 2 : 1,
+        paper: 0
+      };
+      want.paper = Math.max(4, count - want.ribbon - want.star - want.spark - want.ring);
+      var room = limit - parts.length;
+      if (room < 10) return;
+      var sum = want.ribbon + want.star + want.spark + want.ring + want.paper;
+      if (sum > room) {
+        var k = room / sum;
+        want.paper = Math.floor(want.paper * k);
+        want.ribbon = Math.floor(want.ribbon * k);
+        want.star = Math.floor(want.star * k);
+        want.spark = Math.floor(want.spark * k);
+        want.ring = room > 40 ? 1 : 0;
+      }
+      var i;
+      for (i = 0; i < want.ribbon; i++) ribbon(x, y, power, rise);
+      for (i = 0; i < want.paper; i++) paper(x, y, power, rise);
+      for (i = 0; i < want.star; i++) star(x, y, power, rise);
+      for (i = 0; i < want.spark; i++) spark(x, y, power, rise);
+      for (i = 0; i < want.ring; i++) ring(x, y, power);
+      if (opts.double !== false && count >= 60) {
+        var id = setTimeout(function () {
+          var at = timers.indexOf(id);
+          if (at >= 0) timers.splice(at, 1);
+          var inner = Math.round(count * 0.3);
+          for (var j = 0; j < inner; j++) star(x, y, power * 0.85);
+          for (var m = 0; m < Math.round(inner * 0.9); m++) spark(x, y, power * 0.9);
+          ring(x, y, power * 0.85);
+          kick();
+        }, 130);
+        timers.push(id);
+      }
+      kick();
+    }
+
+    function starPath(c, r) {
+      c.beginPath();
+      for (var i = 0; i < 10; i++) {
+        var rad = i % 2 ? r * 0.44 : r;
+        var ang = (Math.PI / 5) * i - Math.PI / 2;
+        var px = Math.cos(ang) * rad;
+        var py = Math.sin(ang) * rad;
+        if (i) c.lineTo(px, py); else c.moveTo(px, py);
+      }
+      c.closePath();
+    }
+
+    function drawSolid(p) {
+      var a = p.life * 1.5;
+      if (a > 1) a = 1;
+      if (a < 0) a = 0;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      if (p.kind === "paper") {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      } else if (p.kind === "ribbon") {
+        var half = p.len / 2;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.wide;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-half, 0);
+        ctx.quadraticCurveTo(-half / 2, Math.sin(p.curl) * p.wave, 0, 0);
+        ctx.quadraticCurveTo(half / 2, Math.sin(p.curl + 2.1) * p.wave, half, 0);
+        ctx.stroke();
+        ctx.restore();
+      } else if (p.kind === "star") {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        starPath(ctx, p.r);
+        ctx.fill();
+        ctx.restore();
+      } else if (p.kind === "ring") {
+        ctx.globalAlpha = a * a;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = Math.max(1, 3.4 * p.life);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawSpark(p) {
+      var a = p.life * 1.4;
+      if (a > 1) a = 1;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = a * 0.45;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.r * 0.8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - p.vx * 2.6, p.y - p.vy * 2.6);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    function frame(now) {
       raf = 0;
+      var t = (now || 0) / 1000;
       ctx.clearRect(0, 0, w, h);
-      for (var i = parts.length - 1; i >= 0; i--) {
-        var p = parts[i];
-        p.vy += 0.3;
-        p.vx *= 0.988;
-        p.vy *= 0.988;
+      wind *= 0.88;
+      var i, p;
+      for (i = parts.length - 1; i >= 0; i--) {
+        p = parts[i];
+        p.vy += p.g;
+        p.vx += wind * 0.05;
+        p.vx *= p.drag;
+        p.vy *= p.drag;
         p.x += p.vx;
         p.y += p.vy;
         p.rot += p.vr;
+        if (p.kind === "ribbon") p.curl += p.curlSpeed * 0.055;
+        else if (p.kind === "star") p.rot += Math.sin(t * p.twinkleSpeed + p.twinkle) * 0.012;
+        else if (p.kind === "ring") p.r += p.grow * (1 - p.life * 0.35);
         p.life -= p.decay;
-        if (p.life <= 0 || p.y > h + 90) { parts.splice(i, 1); continue; }
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.5));
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        ctx.restore();
+        if (p.life <= 0 || p.y > h + 120 || p.x < -160 || p.x > w + 160) { parts.splice(i, 1); continue; }
+        if (p.kind !== "spark") drawSolid(p);
       }
+      /* 火花单独走加色混合：亮点叠在纸屑上会发光，而不是盖一块白。 */
+      ctx.globalCompositeOperation = "lighter";
+      for (i = 0; i < parts.length; i++) if (parts[i].kind === "spark") drawSpark(parts[i]);
+      ctx.globalCompositeOperation = "source-over";
       if (parts.length) raf = requestAnimationFrame(frame);
     }
 
-    function clear() { parts.length = 0; ctx.clearRect(0, 0, w, h); }
+    /* 点空白处的小口礼花：比正式礼花小一号，不抢戏。 */
+    function puff(x, y) {
+      var limit = cap();
+      if (!limit || parts.length > limit * 0.7) return;
+      burst(x, y, 18, { power: 0.62, double: false });
+    }
+
+    /* 吹灭蜡烛用：只有往上飘的暖色火星，不炸纸屑。 */
+    function embers(x, y, count) {
+      if (isReduced()) return;
+      for (var i = 0; i < count; i++) spark(x + rand(-30, 30), y + rand(-10, 8), 0.7, true);
+      kick();
+    }
+
+    /* 滚动时把「风」带进粒子：滑得快，礼花跟着横着飘一点。 */
+    function setWind(dx) {
+      if (isReduced()) return;
+      wind = Math.max(-10, Math.min(10, wind + dx));
+    }
+
+    function clear() {
+      for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+      timers.length = 0;
+      parts.length = 0;
+      ctx.clearRect(0, 0, w, h);
+    }
 
     resize();
     window.addEventListener("resize", resize);
@@ -671,15 +1073,15 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       reduceQuery.addEventListener("change", function () { if (isReduced()) clear(); });
     }
 
-    return { burst: burst, clear: clear };
+    return { burst: burst, puff: puff, embers: embers, wind: setWind, clear: clear };
   })();
 
-  /* ---------- 结尾礼花高潮：滑到底后连爆一段（06 号票）----------
-     有明确终点的一次性高潮；减弱动态效果下完全不连爆，页面照常走完。 */
+  /* ---------- 结尾礼花高潮：滑到底后连爆一段（06 号票；17 号票升级成三种打法）----------
+     单发大的 / 左右对开 / 地喷，随机轮换；减弱动态效果下完全不连爆，页面照常走完。 */
   var Finale = (function () {
     var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-    var DURATION_MS = 4200;
-    var GAP_MS = 250;
+    var DURATION_MS = 4600;
+    var GAP_MS = 260;
     var started = false;
     var timer = 0;
     var until = 0;
@@ -694,11 +1096,17 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       timer = 0;
       /* 切到别的 app 时不再排队；切回来也不补爆，高潮到点自然结束。 */
       if (document.hidden) return;
-      Confetti.burst(
-        window.innerWidth * (0.14 + Math.random() * 0.72),
-        window.innerHeight * (0.16 + Math.random() * 0.4),
-        80 + ((Math.random() * 80) | 0)
-      );
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var roll = Math.random();
+      if (roll < 0.34) {
+        Confetti.burst(vw * (0.14 + Math.random() * 0.72), vh * (0.14 + Math.random() * 0.34), 150, { power: 1.2 });
+      } else if (roll < 0.7) {
+        Confetti.burst(vw * (0.08 + Math.random() * 0.28), vh * (0.2 + Math.random() * 0.34), 100, { power: 1.05 });
+        Confetti.burst(vw * (0.64 + Math.random() * 0.28), vh * (0.2 + Math.random() * 0.34), 100, { power: 1.05 });
+      } else {
+        Confetti.burst(vw * (0.18 + Math.random() * 0.64), vh * 1.02, 120, { power: 1.3, rise: true, double: false });
+      }
       if (Date.now() >= until) return;
       timer = setTimeout(volley, GAP_MS);
     }
@@ -718,26 +1126,49 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     return { start: start };
   })();
 
-  /* ---------- 蜡烛：点一下或按住都能吹灭（05 号票）----------
-     轻点与按住最后都汇进同一个 blowOut()；全程只有触摸/指针，
-     不碰麦克风、不申请任何权限，外部能看到的结果只有 data-candles 与 data-card-state。 */
+  /* ---------- 蜡烛：点一下或按住都能吹灭（05 号票；17 号票加了「吹」的进度）----------
+     轻点与按住最后都汇进同一个 blowOut()；按住时把 HOLD_MS 的进度写进 `--blow`，
+     火苗跟着歪、蜡烛跟着矮——不靠文字也看得出「再吹一下就成」。
+     全程只有触摸/指针，不碰麦克风、不申请任何权限；外部能看到的结果只有
+     `--blow`、data-candles 与 data-card-state。 */
   var Candles = (function () {
     var box = document.getElementById("candles");
     if (!box) return { blowOut: function () {} };
     var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-    var HOLD_MS = 420;
+    var HOLD_MS = 560;
     var timer = 0;
+    var startAt = 0;
+    var progRaf = 0;
 
     function reduced() { return !!(motionQuery && motionQuery.matches); }
     function isOut() { return root.getAttribute("data-candles") === "out"; }
+    function setBlow(v) { box.style.setProperty("--blow", v.toFixed(3)); }
+
+    function stopProgress() {
+      if (progRaf) { cancelAnimationFrame(progRaf); progRaf = 0; }
+    }
+
+    /* 一路把 `--blow` 推到 1；推到 1 就熄灭。 */
+    function tick() {
+      progRaf = 0;
+      var p = Math.min(1, (Date.now() - startAt) / HOLD_MS);
+      setBlow(p);
+      if (p < 1) progRaf = requestAnimationFrame(tick);
+    }
 
     function blowOut() {
       if (timer) { clearTimeout(timer); timer = 0; }
+      stopProgress();
+      box.classList.remove("is-blowing");
       if (isOut()) return;
+      setBlow(1);
       root.setAttribute("data-candles", "out");
-      /* `礼花` 从蜡烛所在的位置炸开，而不是屏幕正中。 */
+      /* `礼花` 从蜡烛所在的位置炸开，而不是屏幕正中；先飘火星，再炸开。 */
       var r = box.getBoundingClientRect();
-      Confetti.burst(r.left + r.width / 2, Math.max(r.top, 0) + r.height * 0.2, 160);
+      var cx = r.left + r.width / 2;
+      var cy = Math.max(r.top, 0) + r.height * 0.2;
+      Confetti.embers(cx, cy - 4, 22);
+      Confetti.burst(cx, cy, 190, { power: 1.15 });
       advance("blown");
       if (box.blur) box.blur();
     }
@@ -747,13 +1178,18 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       /* 减弱动态效果：不演「按住」这一段，直接熄灭，仪式照样能完成。 */
       if (reduced()) { blowOut(); return; }
       box.classList.add("is-blowing");
+      startAt = Date.now();
+      setBlow(0);
+      stopProgress();
+      progRaf = requestAnimationFrame(tick);
       timer = setTimeout(blowOut, HOLD_MS);
     }
 
     function release() {
       if (!timer) return;
-      clearTimeout(timer); timer = 0;
-      box.classList.remove("is-blowing");
+      clearTimeout(timer);
+      timer = 0;
+      stopProgress();
       blowOut();
     }
 
@@ -767,6 +1203,253 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     return { blowOut: blowOut };
   })();
 
+  /* ---------- 照片灯箱（17 号票）：点任意一张照片放大看，方向键 / 滑动翻页 ----------
+     照片是私有内容，只在本地放大看，不做上传、分享或外链；
+     打开时锁页面滚动、焦点进灯箱，关闭后焦点回到刚才那张。 */
+  var Lightbox = (function () {
+    var box = document.getElementById("lightbox");
+    if (!box) return { show: function () {}, hide: function () {} };
+    var img = document.getElementById("lightbox-img");
+    var counter = document.getElementById("lightbox-count");
+    var closeBtn = document.getElementById("lightbox-close");
+    var prevBtn = document.getElementById("lightbox-prev");
+    var nextBtn = document.getElementById("lightbox-next");
+    var motionQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var index = 0;
+    var opened = false;
+    var lastFocus = null;
+    var hideTimer = 0;
+    var downAt = null;
+    var sx = 0;
+    var sy = 0;
+    var swiping = false;
+
+    function total() { return PHOTOS.length; }
+    function reduced() { return !!(motionQuery && motionQuery.matches); }
+
+    function show(i) {
+      if (state() === "cover" || !total()) return;
+      index = ((i % total()) + total()) % total();
+      var photo = PHOTOS[index];
+      if (!opened) {
+        lastFocus = document.activeElement;
+        opened = true;
+        clearTimeout(hideTimer);
+        box.hidden = false;
+        root.setAttribute("data-lightbox", "open");
+        if (reduced()) box.classList.add("is-open");
+        else requestAnimationFrame(function () { box.classList.add("is-open"); });
+        if (closeBtn) closeBtn.focus();
+      }
+      if (img) {
+        img.src = photo.src;
+        img.style.aspectRatio = photo.w + " / " + photo.h;
+        img.alt = "第 " + (index + 1) + " 张照片";
+      }
+      if (counter) counter.textContent = (index + 1) + " / " + total();
+    }
+
+    function hide() {
+      if (!opened) return;
+      opened = false;
+      box.classList.remove("is-open");
+      root.removeAttribute("data-lightbox");
+      var finish = function () { if (!opened) box.hidden = true; };
+      if (reduced()) finish();
+      else { clearTimeout(hideTimer); hideTimer = setTimeout(finish, 340); }
+      if (lastFocus && lastFocus.focus) {
+        try { lastFocus.focus({ preventScroll: true }); }
+        catch (e) { lastFocus.focus(); }
+      }
+      lastFocus = null;
+    }
+
+    function step(delta) { if (opened) show(index + delta); }
+
+    /* 点照片打开：先记下按下的位置，横滑照片带时不要误开。 */
+    document.addEventListener("pointerdown", function (e) {
+      downAt = { x: e.clientX, y: e.clientY };
+    }, { capture: true, passive: true });
+
+    document.addEventListener("click", function (e) {
+      if (opened || state() === "cover") return;
+      var fig = e.target && e.target.closest ? e.target.closest(".shot") : null;
+      if (!fig) return;
+      if (downAt && (Math.abs(e.clientX - downAt.x) > 10 || Math.abs(e.clientY - downAt.y) > 10)) return;
+      var i = parseInt(fig.getAttribute("data-photo"), 10);
+      if (isNaN(i)) return;
+      show(i);
+    });
+
+    /* 键盘：聚焦到某张照片后，Enter / Space 打开它。 */
+    document.addEventListener("keydown", function (e) {
+      if (opened) return;
+      if (e.key !== "Enter" && e.key !== " " && e.key !== "Spacebar") return;
+      var fig = e.target && e.target.closest ? e.target.closest(".shot") : null;
+      if (!fig) return;
+      var i = parseInt(fig.getAttribute("data-photo"), 10);
+      if (isNaN(i)) return;
+      e.preventDefault();
+      show(i);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (!opened) return;
+      if (e.key === "Escape") { e.preventDefault(); hide(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+    });
+
+    if (closeBtn) closeBtn.addEventListener("click", hide);
+    if (prevBtn) prevBtn.addEventListener("click", function () { step(-1); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { step(1); });
+
+    box.addEventListener("click", function (e) {
+      if (e.target === box) { hide(); return; }
+      var cls = e.target && e.target.className;
+      if (typeof cls === "string" && cls.indexOf("lightbox__stage") === 0) hide();
+    });
+
+    /* 手机上左右划：够远才算翻页，免得和「点一下关掉」抢。 */
+    box.addEventListener("pointerdown", function (e) {
+      swiping = !(e.target && e.target.closest && e.target.closest("button"));
+      sx = e.clientX;
+      sy = e.clientY;
+    }, { passive: true });
+    box.addEventListener("pointerup", function (e) {
+      if (!swiping) return;
+      swiping = false;
+      var dx = e.clientX - sx;
+      var dy = e.clientY - sy;
+      if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    return { show: show, hide: hide };
+  })();
+
+  /* ---------- 滚动与指针：进度条、装饰视差、点击小礼花（17 号票）----------
+     滚动、指针、缓动全合进一个 rAF；画面静止时循环就停。
+     只写两个喂给 transform 的变量（--px / --py），不碰任何布局属性，
+     所以滚动时既不会有重排，也不会把抠图上的投影反复重算。 */
+  var Motion = (function () {
+    var reduceQuery = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var fineQuery = window.matchMedia ? window.matchMedia("(hover: hover) and (pointer: fine)") : null;
+    var bar = document.getElementById("progress-bar");
+    var spot = document.getElementById("spotlight");
+    var items = [].slice.call(document.querySelectorAll(".deco")).map(function (el) {
+      var depth = 18;   /* 越大，跟页面差得越多，看着越远 */
+      if (el.classList.contains("deco--ghost")) depth = 30;
+      else if (el.classList.contains("deco--stickered")) depth = 10;
+      return { el: el, depth: depth, top: 0, height: 0, px: 0, py: 0 };
+    });
+    var tx = 0;
+    var ty = 0;
+    var cx = 0;
+    var cy = 0;
+    var spotX = 9;
+    var spotY = 9;
+    var raf = 0;
+    var lastScroll = 0;
+
+    function reduced() { return !!(reduceQuery && reduceQuery.matches); }
+    function pointerFx() { return !reduced() && !!(fineQuery && fineQuery.matches); }
+
+    /* 先清零再量：带着视差量出来的位置会一轮一轮往上叠。 */
+    function measure() {
+      var i;
+      for (i = 0; i < items.length; i++) {
+        items[i].el.style.setProperty("--px", "0px");
+        items[i].el.style.setProperty("--py", "0px");
+        items[i].px = 0;
+        items[i].py = 0;
+      }
+      for (i = 0; i < items.length; i++) {
+        var r = items[i].el.getBoundingClientRect();
+        items[i].top = r.top + window.pageYOffset;
+        items[i].height = r.height;
+      }
+    }
+
+    function apply() {
+      var y = window.pageYOffset;
+      var vh = window.innerHeight;
+      var room = Math.max(1, document.documentElement.scrollHeight - vh);
+
+      if (bar) bar.style.transform = "scaleX(" + Math.min(1, Math.max(0, y / room)).toFixed(4) + ")";
+
+      /* 滑得快，礼花就跟着横着飘一点：风 = 这一帧滚过的距离。 */
+      var dy = y - lastScroll;
+      lastScroll = y;
+      if (dy) Confetti.wind(dy * 0.3);
+
+      if (reduced()) return;
+      var pull = pointerFx() ? 1 : 0;
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var n = (it.top + it.height / 2 - y - vh / 2) / (vh * 0.75);
+        n = Math.max(-1.35, Math.min(1.35, n));
+        var py = n * it.depth + cy * it.depth * 0.6 * pull;
+        var px = cx * it.depth * 0.6 * pull;
+        if (Math.abs(px - it.px) > 0.4 || Math.abs(py - it.py) > 0.4) {
+          it.px = px;
+          it.py = py;
+          it.el.style.setProperty("--px", px.toFixed(1) + "px");
+          it.el.style.setProperty("--py", py.toFixed(1) + "px");
+        }
+      }
+    }
+
+    function frame() {
+      raf = 0;
+      var follow = pointerFx() ? 0.14 : 1;
+      cx += (tx - cx) * follow;
+      cy += (ty - cy) * follow;
+      if (spot && pointerFx() && (spotX !== tx || spotY !== ty)) {
+        spotX = tx;
+        spotY = ty;
+        spot.style.transform = "translate3d(" + (((tx + 1) / 2) * window.innerWidth).toFixed(0) + "px," +
+          (((ty + 1) / 2) * window.innerHeight).toFixed(0) + "px,0)";
+      }
+      apply();
+      if (pointerFx() && (Math.abs(tx - cx) > 0.002 || Math.abs(ty - cy) > 0.002)) raf = requestAnimationFrame(frame);
+    }
+
+    function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+
+    window.addEventListener("scroll", kick, { passive: true });
+    window.addEventListener("pointermove", function (e) {
+      if (!pointerFx()) return;
+      tx = (e.clientX / window.innerWidth) * 2 - 1;
+      ty = (e.clientY / window.innerHeight) * 2 - 1;
+      kick();
+    }, { passive: true });
+
+    var resizeTimer = 0;
+    function remeasure() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () { measure(); kick(); }, 200);
+    }
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("orientationchange", remeasure);
+    /* 图片落地前后元素高度会变，量两次：一次现在、一次等全都下完。 */
+    window.addEventListener("load", function () { measure(); kick(); });
+
+    /* 点空白处：炸一小口礼花。按钮、照片、灯箱自己有自己的戏，不抢。 */
+    document.addEventListener("pointerdown", function (e) {
+      if (state() === "cover" || reduced()) return;
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      var t = e.target;
+      if (t && t.closest && t.closest("button, a, .shot, .strip, .lightbox, audio")) return;
+      Confetti.puff(e.clientX, e.clientY);
+    }, { passive: true });
+
+    function refresh() { measure(); kick(); }
+
+    measure();
+    kick();
+
+    return { refresh: refresh, kick: kick };
+  })();
   /* ---------- 开场一句：逐字打出，点任意处跳过（02 号票）---------- */
   var Opening = (function () {
     var line = document.querySelector(".opening__line");
@@ -1018,7 +1701,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     unlocked = true;
     tryPlay();
     Confetti.burst(window.innerWidth / 2, window.innerHeight * 0.44, 150);
-    window.scrollTo(0, 0);
+    Motion.refresh();
+    Opening.start();
     Opening.start();
     Photos.arm();
     armReveal();
